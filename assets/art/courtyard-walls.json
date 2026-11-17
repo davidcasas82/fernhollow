@@ -1,0 +1,13 @@
+{
+  "world": {
+    "w": 1600,
+    "h": 900
+  },
+  "walkable": {
+    "x": 192,
+    "y": 244,
+    "w": 1224,
+    "h": 524,
+    "note": "Inner cobblestone floor in world pixels, inside the decorative walls. The fountain sits in the upper-left of this rectangle (decorative; not a collision box of its own). The front-wall path gap and the outer cobble apron are outside this rectangle."
+  }
+}

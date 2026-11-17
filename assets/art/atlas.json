@@ -1,0 +1,775 @@
+{
+  "world": {
+    "w": 1600,
+    "h": 900
+  },
+  "scale_note": "All draw scales are integers. Ryan and enemies are authored at 1 world-pixel per art-pixel so Ryan is 91 px tall in the 900-px-high world (about 80-90 as approved).",
+  "palette_colors": 47,
+  "sprites": {
+    "ryan": {
+      "file": "ryan.png",
+      "frame_w": 80,
+      "frame_h": 96,
+      "frame_count": 24,
+      "columns": 6,
+      "rows": 4,
+      "row_order": [
+        "down",
+        "up",
+        "left",
+        "right"
+      ],
+      "column_order": [
+        "idle",
+        "walk0",
+        "walk1",
+        "walk2",
+        "walk3",
+        "shoot"
+      ],
+      "anchor": {
+        "x": 40,
+        "y": 93,
+        "note": "feet"
+      },
+      "scale": 1,
+      "animations": {
+        "idle_down": {
+          "frames": [
+            {
+              "col": 0,
+              "row": 0
+            }
+          ],
+          "fps": 0
+        },
+        "walk_down": {
+          "frames": [
+            {
+              "col": 1,
+              "row": 0
+            },
+            {
+              "col": 2,
+              "row": 0
+            },
+            {
+              "col": 3,
+              "row": 0
+            },
+            {
+              "col": 4,
+              "row": 0
+            }
+          ],
+          "fps": 8
+        },
+        "shoot_down": {
+          "frames": [
+            {
+              "col": 5,
+              "row": 0
+            }
+          ],
+          "fps": 0
+        },
+        "idle_up": {
+          "frames": [
+            {
+              "col": 0,
+              "row": 1
+            }
+          ],
+          "fps": 0
+        },
+        "walk_up": {
+          "frames": [
+            {
+              "col": 1,
+              "row": 1
+            },
+            {
+              "col": 2,
+              "row": 1
+            },
+            {
+              "col": 3,
+              "row": 1
+            },
+            {
+              "col": 4,
+              "row": 1
+            }
+          ],
+          "fps": 8
+        },
+        "shoot_up": {
+          "frames": [
+            {
+              "col": 5,
+              "row": 1
+            }
+          ],
+          "fps": 0
+        },
+        "idle_left": {
+          "frames": [
+            {
+              "col": 0,
+              "row": 2
+            }
+          ],
+          "fps": 0
+        },
+        "walk_left": {
+          "frames": [
+            {
+              "col": 1,
+              "row": 2
+            },
+            {
+              "col": 2,
+              "row": 2
+            },
+            {
+              "col": 3,
+              "row": 2
+            },
+            {
+              "col": 4,
+              "row": 2
+            }
+          ],
+          "fps": 8
+        },
+        "shoot_left": {
+          "frames": [
+            {
+              "col": 5,
+              "row": 2
+            }
+          ],
+          "fps": 0
+        },
+        "idle_right": {
+          "frames": [
+            {
+              "col": 0,
+              "row": 3
+            }
+          ],
+          "fps": 0
+        },
+        "walk_right": {
+          "frames": [
+            {
+              "col": 1,
+              "row": 3
+            },
+            {
+              "col": 2,
+              "row": 3
+            },
+            {
+              "col": 3,
+              "row": 3
+            },
+            {
+              "col": 4,
+              "row": 3
+            }
+          ],
+          "fps": 8
+        },
+        "shoot_right": {
+          "frames": [
+            {
+              "col": 5,
+              "row": 3
+            }
+          ],
+          "fps": 0
+        }
+      }
+    },
+    "puffling": {
+      "file": "puffling.png",
+      "frame_w": 56,
+      "frame_h": 56,
+      "frame_count": 4,
+      "anchor": {
+        "x": 28,
+        "y": 55
+      },
+      "scale": 1,
+      "animations": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        }
+      }
+    },
+    "thistle-jay": {
+      "file": "thistle-jay.png",
+      "frame_w": 64,
+      "frame_h": 56,
+      "frame_count": 4,
+      "anchor": {
+        "x": 32,
+        "y": 55
+      },
+      "scale": 1,
+      "animations": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        }
+      }
+    },
+    "fern-hare": {
+      "file": "fern-hare.png",
+      "frame_w": 56,
+      "frame_h": 56,
+      "frame_count": 4,
+      "anchor": {
+        "x": 28,
+        "y": 55
+      },
+      "scale": 1,
+      "animations": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        }
+      }
+    },
+    "acorn-spinner": {
+      "file": "acorn-spinner.png",
+      "frame_w": 56,
+      "frame_h": 56,
+      "frame_count": 4,
+      "anchor": {
+        "x": 28,
+        "y": 55
+      },
+      "scale": 1,
+      "animations": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        }
+      }
+    },
+    "split-sprout": {
+      "file": "split-sprout.png",
+      "frame_w": 64,
+      "frame_h": 64,
+      "frame_count": 4,
+      "anchor": {
+        "x": 32,
+        "y": 63
+      },
+      "scale": 1,
+      "animations": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        }
+      }
+    },
+    "sprout-bud": {
+      "file": "sprout-bud.png",
+      "frame_w": 40,
+      "frame_h": 40,
+      "frame_count": 4,
+      "anchor": {
+        "x": 20,
+        "y": 39
+      },
+      "scale": 1,
+      "animations": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        }
+      }
+    },
+    "ivy-wisp": {
+      "file": "ivy-wisp.png",
+      "frame_w": 40,
+      "frame_h": 48,
+      "frame_count": 4,
+      "anchor": {
+        "x": 20,
+        "y": 47
+      },
+      "scale": 1,
+      "animations": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        }
+      }
+    },
+    "ivy-segment": {
+      "file": "ivy-segment.png",
+      "frame_w": 28,
+      "frame_h": 32,
+      "frame_count": 4,
+      "anchor": {
+        "x": 14,
+        "y": 31
+      },
+      "scale": 1,
+      "animations": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        }
+      }
+    },
+    "moss-turtle": {
+      "file": "moss-turtle.png",
+      "frame_w": 80,
+      "frame_h": 56,
+      "frame_count": 4,
+      "anchor": {
+        "x": 40,
+        "y": 55
+      },
+      "scale": 1,
+      "animations": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        }
+      }
+    },
+    "gust-bloom": {
+      "file": "gust-bloom.png",
+      "frame_w": 56,
+      "frame_h": 72,
+      "frame_count": 4,
+      "anchor": {
+        "x": 28,
+        "y": 71
+      },
+      "scale": 1,
+      "animations": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        }
+      }
+    },
+    "pollen-puff": {
+      "file": "pollen-puff.png",
+      "frame_w": 28,
+      "frame_h": 28,
+      "frame_count": 4,
+      "anchor": {
+        "x": 14,
+        "y": 27
+      },
+      "scale": 1,
+      "animations": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        }
+      }
+    },
+    "moss-giant": {
+      "file": "moss-giant.png",
+      "frame_w": 128,
+      "frame_h": 96,
+      "frame_count": 4,
+      "anchor": {
+        "x": 64,
+        "y": 95
+      },
+      "scale": 1,
+      "animations": {
+        "idle": {
+          "frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 6
+        }
+      }
+    },
+    "fx": {
+      "file": "fx.png",
+      "cell": 64,
+      "items": {
+        "bolt": {
+          "frames": [
+            {
+              "x": 0,
+              "y": 0,
+              "w": 64,
+              "h": 64,
+              "inner_w": 24,
+              "inner_h": 16,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 64,
+              "y": 0,
+              "w": 64,
+              "h": 64,
+              "inner_w": 24,
+              "inner_h": 16,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 128,
+              "y": 0,
+              "w": 64,
+              "h": 64,
+              "inner_w": 24,
+              "inner_h": 16,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 192,
+              "y": 0,
+              "w": 64,
+              "h": 64,
+              "inner_w": 24,
+              "inner_h": 16,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            }
+          ],
+          "frame_count": 4,
+          "scale": 1
+        },
+        "sunseed": {
+          "frames": [
+            {
+              "x": 0,
+              "y": 64,
+              "w": 64,
+              "h": 64,
+              "inner_w": 16,
+              "inner_h": 16,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 64,
+              "y": 64,
+              "w": 64,
+              "h": 64,
+              "inner_w": 16,
+              "inner_h": 16,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            }
+          ],
+          "frame_count": 2,
+          "scale": 1
+        },
+        "hit": {
+          "frames": [
+            {
+              "x": 0,
+              "y": 128,
+              "w": 64,
+              "h": 64,
+              "inner_w": 32,
+              "inner_h": 32,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 64,
+              "y": 128,
+              "w": 64,
+              "h": 64,
+              "inner_w": 32,
+              "inner_h": 32,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 128,
+              "y": 128,
+              "w": 64,
+              "h": 64,
+              "inner_w": 32,
+              "inner_h": 32,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            }
+          ],
+          "frame_count": 3,
+          "scale": 1
+        },
+        "poof": {
+          "frames": [
+            {
+              "x": 0,
+              "y": 192,
+              "w": 64,
+              "h": 64,
+              "inner_w": 48,
+              "inner_h": 48,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 64,
+              "y": 192,
+              "w": 64,
+              "h": 64,
+              "inner_w": 48,
+              "inner_h": 48,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 128,
+              "y": 192,
+              "w": 64,
+              "h": 64,
+              "inner_w": 48,
+              "inner_h": 48,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 192,
+              "y": 192,
+              "w": 64,
+              "h": 64,
+              "inner_w": 48,
+              "inner_h": 48,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            }
+          ],
+          "frame_count": 4,
+          "scale": 1
+        },
+        "shockwave": {
+          "frames": [
+            {
+              "x": 0,
+              "y": 256,
+              "w": 64,
+              "h": 64,
+              "inner_w": 16,
+              "inner_h": 16,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 64,
+              "y": 256,
+              "w": 64,
+              "h": 64,
+              "inner_w": 28,
+              "inner_h": 28,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 128,
+              "y": 256,
+              "w": 64,
+              "h": 64,
+              "inner_w": 40,
+              "inner_h": 40,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 192,
+              "y": 256,
+              "w": 64,
+              "h": 64,
+              "inner_w": 56,
+              "inner_h": 56,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            }
+          ],
+          "frame_count": 4,
+          "scale": 1
+        },
+        "hud": {
+          "frames": [
+            {
+              "x": 0,
+              "y": 320,
+              "w": 64,
+              "h": 64,
+              "inner_w": 16,
+              "inner_h": 16,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 64,
+              "y": 320,
+              "w": 64,
+              "h": 64,
+              "inner_w": 16,
+              "inner_h": 16,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            },
+            {
+              "x": 128,
+              "y": 320,
+              "w": 64,
+              "h": 64,
+              "inner_w": 16,
+              "inner_h": 16,
+              "anchor": {
+                "x": 32,
+                "y": 32
+              }
+            }
+          ],
+          "frame_count": 3,
+          "scale": 1
+        }
+      }
+    }
+  },
+  "courtyard": {
+    "file": "courtyard.png",
+    "w": 1600,
+    "h": 900,
+    "walkable": {
+      "x": 192,
+      "y": 244,
+      "w": 1224,
+      "h": 524,
+      "note": "Inner cobblestone floor in world pixels, inside the decorative walls. The fountain sits in the upper-left of this rectangle (decorative; not a collision box of its own). The front-wall path gap and the outer cobble apron are outside this rectangle."
+    }
+  },
+  "title": {
+    "file": "title-bg.png",
+    "named_file": "title-bg-named.png",
+    "w": 1600,
+    "h": 900,
+    "note": "title-bg.png has no text. title-bg-named.png has RYAN AND THE SIEGE OF FERNHOLLOW. Neither includes PRESS START."
+  },
+  "behavior_ids": {
+    "wanderer": "puffling",
+    "diamond": "thistle-jay",
+    "pink": "fern-hare",
+    "spinner": "acorn-spinner",
+    "splitter": "split-sprout",
+    "splitterChild": "sprout-bud",
+    "snake": "ivy-wisp",
+    "snakeSegment": "ivy-segment",
+    "tank": "moss-turtle",
+    "void": "gust-bloom",
+    "atom": "pollen-puff",
+    "pathBoss": "moss-giant"
+  }
+}
