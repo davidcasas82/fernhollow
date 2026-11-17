@@ -438,16 +438,6 @@ export function drawRyanDeaths(ctx, list) {
   }
 }
 
-export function drawBullets(ctx, bullets, t = 0) {
-  const sheet = artBook()?.sheets?.fx;
-  if (!ctx || !sheet || !bullets) return;
-  for (const b of bullets) {
-    if (b.dead) continue;
-    const ang = Math.atan2(b.vy || 0, b.vx || 0);
-    drawClip(ctx, sheet, "bolt", t, b.x, b.y, { angle: ang });
-  }
-}
-
 export function drawGeoms(ctx, geoms, t = 0) {
   const sheet = artBook()?.sheets?.fx;
   if (!ctx || !sheet || !geoms) return;

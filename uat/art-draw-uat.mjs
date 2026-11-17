@@ -85,7 +85,7 @@ function assertSprites(ctx, label) {
 }
 
 const { parseAtlas, bindArt, clipFrame } = await import(js("art.js"));
-const { drawPlayer, drawEnemies, drawBullets, drawGeoms, drawHudIcons } = await import(
+const { drawPlayer, drawEnemies, drawGeoms, drawHudIcons } = await import(
   js("render.js")
 );
 const { drawPanel, drawButton, drawBanner, drawBar, drawCursor } = await import(
@@ -321,13 +321,6 @@ drawEnemies(
 );
 draws = assertSprites(ctx, "elite");
 assert.equal(draws[0][1].__artFile, "moss-giant.png");
-
-ctx.calls.length = 0;
-drawBullets(ctx, [{ x: 420, y: 500, vx: 10, vy: 0, dead: false }], 0);
-draws = assertSprites(ctx, "sun-bolt");
-assert.equal(draws[0][1].__artFile, "fx.png");
-assert.equal(draws[0][2], 0);
-assert.equal(draws[0][3], 0);
 
 ctx.calls.length = 0;
 drawGeoms(ctx, [{ x: 450, y: 520, life: 10, maxLife: 10, r: 6 }], 0);
