@@ -1,10 +1,12 @@
-# Geometry Arena
+# Ryan and the Siege of Fernhollow
 
-A **Geometry Wars–inspired** twin-stick shooter for the browser. Move with WASD, aim with the mouse, hold click to fire, and survive escalating geometric swarms. Bluetooth / USB gamepads work too (left stick move, right stick aim).
+A kid-friendly twin-stick shooter. Ryan holds the castle courtyard, fires sun-bolts, and scoops **Sunseeds** while waves of forest creatures tumble in. Same loop as the original arena game: keyboard, mouse, gamepad, and touch.
+
+Brave and fun. Not scary.
 
 ## Play now
 
-**[▶ Open Geometry Arena](https://davidcasas82.github.io/geometry-arena/)**
+**[▶ Play Ryan and the Siege of Fernhollow](https://davidcasas82.github.io/fernhollow/)**
 
 Works on **desktop** (mouse/keyboard), **gamepad** (TV/couch), and **phone/tablet** (virtual twin-sticks — landscape recommended).
 
@@ -27,7 +29,7 @@ Or open `index.html` with any static file server (ES modules need a server, not 
 | Move | `W` `A` `S` `D` (or arrows) | Left stick (analog speed) / D-pad |
 | Aim | Drag trackpad / mouse (relative) | Right stick (absolute) |
 | Fire | **Click and hold** left mouse | **RT** or **RB** (hold) |
-| Bomb | `Space` or `B` | **LT** (also A / LB) |
+| Royal Burst | `Space` or `B` | **LT** (also A / LB) |
 | Pause | `P` / `Esc` | **Start** / Options |
 | Mute | `M` | **Back** / Select / Share |
 | Restart | Play Again / `R` after game over | **A** or **Start** |
@@ -40,86 +42,69 @@ Or open `index.html` with any static file server (ES modules need a server, not 
 |--------|---------|
 | Move | Left thumb — drag (virtual stick) |
 | Aim + fire | Right thumb — drag to aim, hold to fire |
-| Bomb | **BOMB** button |
+| Royal Burst | **BOMB** button |
 | Pause | **❚❚** button |
 
-Landscape is best. A rotate hint appears in portrait. Desktop mouse/keyboard and gamepad are unchanged when you’re not on a touch device.
+Landscape is best. A rotate hint appears in portrait.
 
-Pair a Bluetooth controller in system settings first (Xbox, DualSense, Switch Pro, 8BitDo, etc.). Press any button once so the browser can see the pad. Keyboard and gamepad work at the same time.
+## How a run works
 
-On play, the game captures the pointer so trackpad aim doesn’t stop at the screen edge (gamepad aim does not need pointer lock).
+- **Sunseeds** — +1 multiplier each, ceiling 999. A hit keeps a recovery seed.
+- **Sun-bolts** thicken with the multiplier — single until **×45 twin**, **×110 triple**.
+- **Royal Bursts** clear the courtyard and score nothing. Start 3 / max 5.
+- **Hearts** — start 3 / max 5.
+- Waves breathe: bursts, lulls, and formations.
 
-## Geometry Wars–inspired systems
+## Creatures
 
-See honest gap scores vs the real game: [`docs/VS_GEOMETRY_WARS.md`](docs/VS_GEOMETRY_WARS.md).
+Behavior ids in code are unchanged. These are the looks:
 
-- **Geom mult economy** — +1 ×mult per geom, ceiling 999, idle decay, death soft-keeps mult  
-- **Reactive neon grid**, additive particles, thruster afterimages  
-- **Fire densifies with mult** — needle until **×45 dual**, **×110 triple** (HUD says so)  
-- **Bombs** — shockwave clear, no points; start 3 / max 5; +1 every **38k** base progress  
-- **Extra lives** — start 3 / max 5; first +life every **32k** base progress (escalates)  
-- **Wave spawn director** (bursts + lulls + formations)
+| Look | Behavior |
+|------|----------|
+| Puffling | Slow pack-seek |
+| Thistle Jay | Dashes in a straight line, then picks a new line |
+| Fern Hare | Creeps, crouches, then hops |
+| Acorn Spinner | Spirals and orbits |
+| Split Sprout | Pops into two smaller sprouts |
+| Ivy Wisp | A weaving vine of leaves |
+| Moss Turtle | Slow, 3 hits |
+| Gust Bloom | Plants, tugs Ryan closer, and sheds Pollen Puffs |
+| Pollen Puff | Small and quick |
 
-## Enemies
-
-| Shape | Behavior |
-|-------|----------|
-| Spore (ice drone) | Slow pack-seek |
-| Thorn (jade spear) | Lane-charge seek |
-| Jaw (coral) | Creep, coil, then bite |
-| Gyro (lilac blades) | Orbit approach |
-| Rift (cracked tablet) | Dies into 2 shards |
-| Lash (coral whip) | Multi-segment weaver |
-| Slab (amber brick) | Slow, 3 HP |
-| Maw (ink blot) | Pulls you in, sheds shards |
-
-Scoop **geoms** to raise multiplier. Death soft-resets mult (keeps a recovery seed).
+**Baron Bramble** is not in this build. His stomp, acorn bombs, and crown moment need their own encounter, and this pass does not rebuild the waves for a boss. The last stage still uses the existing elite: a big Moss Turtle.
 
 ## Soundtrack
 
-Suno-generated instrumental **Neon Swarm** (two variants):
+The existing instrumental **Neon Swarm** is still wired up (two variants). A new chiptune is not in this build.
 
 | File | When |
 |------|------|
-| `audio/neon-swarm-1.mp3` | Levels **1, 3, 5…** |
-| `audio/neon-swarm-2.mp3` | Levels **2, 4, 6…** |
+| `audio/neon-swarm-1.mp3` | Waves **1, 3, 5…** |
+| `audio/neon-swarm-2.mp3` | Waves **2, 4, 6…** |
 
-Heat ticks every **70s** of survival (see `LEVEL_DURATION_SEC`). Tracks crossfade without restarting; mute/`M` silences SFX + BGM.
+Tracks crossfade. Mute / `M` silences effects and music.
 
 ## Stack
 
 - Vanilla HTML / CSS / JS (ES modules)
-- Canvas 2D rendering
-- Web Audio SFX + HTMLAudioElement BGM loops
-- LocalStorage for high score
+- Canvas 2D, nearest-neighbor pixel sprites
+- Web Audio effects + HTMLAudioElement music loops
+- LocalStorage for the high score
 
-## Dev / session handoff
+## Dev notes
 
-For architecture, UI flow, balance contracts, past bugs, and how to resume work in a new session, see:
+Architecture and balance live in [`docs/BUILD_CONTEXT.md`](docs/BUILD_CONTEXT.md). Knobs live in `js/constants.js`. The signed-off look is in `docs/v2-mockups/`.
 
-**[`docs/BUILD_CONTEXT.md`](docs/BUILD_CONTEXT.md)**
-
-Balance knobs live in `js/constants.js` (prefer that over README numbers if they disagree).
+```bash
+npm run uat
+npm run smoke:frames
+```
 
 ## Deploy (GitHub Pages)
 
-This repo is set up for **GitHub Pages** on the `main` branch (site root).
+This repo deploys from the `main` branch (site root).
 
 | | |
 |--|--|
-| **Live game** | https://davidcasas82.github.io/geometry-arena/ |
-| **Source** | https://github.com/davidcasas82/geometry-arena |
-
-**Update the live site:** commit and push to `main` — Pages rebuilds automatically (usually under a minute).
-
-```bash
-git add -A
-git commit -m "Your change"
-git push
-```
-
-Other static hosts (Vercel, Netlify, Cloudflare Pages) also work if you ever want a custom domain or private deploys.
-
-## Tuning
-
-Gameplay knobs live in `js/constants.js` (speeds, fire rate, spawn ramp, lives, colors).
+| **Live game** | https://davidcasas82.github.io/fernhollow/ |
+| **Source** | https://github.com/davidcasas82/fernhollow |

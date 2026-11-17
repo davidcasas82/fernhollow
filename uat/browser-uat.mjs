@@ -6,13 +6,25 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
 const BASE = process.env.UAT_URL || "http://localhost:5173";
-const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+function findChrome() {
+  const list = [
+    process.env.CHROME,
+    "/usr/bin/google-chrome",
+    "/usr/bin/google-chrome-stable",
+    "/usr/local/bin/google-chrome",
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  ].filter(Boolean);
+  for (const p of list) if (fs.existsSync(p)) return p;
+  return list[0];
+}
+const CHROME = findChrome();
 
 const require = createRequire(import.meta.url);
 
@@ -61,19 +73,25 @@ async function main() {
       if (msg.type() === "error") pageErrors.push(msg.text());
     });
 
-    const res = await page.goto(BASE, { waitUntil: "networkidle0" });
+    const res = await page.goto(BASE, { waitUntil: "domcontentloaded" });
     log(res && res.ok(), "Page loads HTTP 200", res ? String(res.status()) : "no response");
 
     await page.waitForSelector("#game");
     await page.waitForSelector("#start-btn");
     log(true, "Canvas and Play button present");
 
-    // Title overlay visible
+    const pageTitle = await page.title();
+    log(pageTitle.includes("Fernhollow"), "Page title is Fernhollow", pageTitle);
+
+    const splashUp = await page.$eval("#splash", (el) => !el.classList.contains("hidden")).catch(() => false);
+    if (splashUp) {
+      await page.click("#splash");
+      await page.waitForFunction(() => !document.getElementById("overlay").classList.contains("hidden"));
+    }
+
+    // Title overlay visible after the press-start card
     const overlayHidden = await page.$eval("#overlay", (el) => el.classList.contains("hidden"));
     log(!overlayHidden, "Menu overlay visible on boot");
-
-    const title = await page.$eval("#overlay-title", (el) => el.textContent.trim());
-    log(title === "Geometry Arena", "Title is Geometry Arena", title);
 
     // HUD defaults
     const score = await page.$eval("#score", (el) => el.textContent);
@@ -130,8 +148,9 @@ async function main() {
     const pauseTitle = await page.$eval("#overlay-title", (el) => el.textContent.trim());
     log(pausedVisible && pauseTitle === "Paused", "P pauses game", pauseTitle);
 
-    // Resume
-    await page.click("#resume-btn");
+    // Resume — primary control is #interrupt-btn; #resume-btn is the extra button
+    const resumeHidden = await page.$eval("#resume-btn", (el) => el.classList.contains("hidden"));
+    await page.click(resumeHidden ? "#interrupt-btn" : "#resume-btn");
     await page.waitForFunction(() => document.getElementById("overlay").classList.contains("hidden"));
     log(true, "Resume continues game");
 
@@ -182,14 +201,19 @@ async function main() {
       "/js/constants.js",
       "/styles.css",
     ]) {
-      const r = await page.goto(BASE + asset, { waitUntil: "networkidle0" });
+      const r = await page.goto(BASE + asset, { waitUntil: "domcontentloaded" });
       const code = r ? r.status() : 0;
       log(code === 200 || code === 304, `Asset ${asset}`, String(code));
     }
 
     // --- Deep state UAT via window.__geometryArena ---
-    await page.goto(BASE, { waitUntil: "networkidle0" });
+    await page.goto(BASE, { waitUntil: "domcontentloaded" });
     await page.waitForSelector("#start-btn");
+    const splashAgain = await page.$eval("#splash", (el) => !el.classList.contains("hidden")).catch(() => false);
+    if (splashAgain) {
+      await page.click("#splash");
+      await page.waitForFunction(() => !document.getElementById("overlay").classList.contains("hidden"));
+    }
     await page.click("#start-btn");
     await page.waitForFunction(() => window.__geometryArena?.state === "playing");
 

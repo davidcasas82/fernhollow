@@ -1,4 +1,6 @@
-# Geometry Arena — Upgrade Plan
+# Ryan and the Siege of Fernhollow — Upgrade Plan
+
+> Historical plan for the twin-stick systems. The public game's name and look are Fernhollow. Soundtrack in this build is still Neon Swarm.
 
 **Status:** LOCKED path (2026-08-16). Execute; do not re-open the six-audit research.  
 **Step 1–2 done. PR A–D shipped.** Plan execute pass complete.
