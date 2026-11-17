@@ -921,7 +921,7 @@ this.modeFlags = new Set();
     // Primary Resume + pause help deep-link (same how-to content as title)
     this.ui.showOverlay(
       "Paused",
-      "Take a breath. The courtyard can wait.",
+      "Take a breath. The shapes can wait.",
       false,
       "Resume",
       () => this.resume(),
@@ -2341,7 +2341,6 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
 
     wctx.save();
     applyCameraTransform(wctx, this.cam, dpr);
-    wctx.imageSmoothingEnabled = false;
     // Floor environment first…
     drawGrid(wctx, 0, 0, this.gridImpulses, this.time, ww, wh, pulse);
     if (this.arena) drawArena(wctx, this.arena, { time: this.time, cam: this.cam });
@@ -2461,7 +2460,7 @@ _draw() {
 
     // Present base world
     main.setTransform(1, 0, 0, 1, 0, 0);
-    main.imageSmoothingEnabled = false;
+    main.imageSmoothingEnabled = true;
     main.fillStyle = "#000005";
     main.fillRect(0, 0, main.canvas.width, main.canvas.height);
     main.drawImage(this.worldCanvas, 0, 0);

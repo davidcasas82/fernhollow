@@ -1,6 +1,4 @@
-# Ryan and the Siege of Fernhollow — Build Context
-
-> Public reskin of Geometry Arena. Player-facing name, courtyard, and sprites use the Fernhollow theme. Systems below still use the original words (geoms, waves, multiplier) where they name code. Soundtrack in this build is still Neon Swarm.
+# Geometry Arena — Build Context
 
 **Purpose:** handoff doc so a new session (human or agent) can resume development without re-discovering architecture, product decisions, and past failure modes.
 
@@ -28,7 +26,7 @@ A **Geometry Wars–inspired twin-stick shooter** for laptop play:
 
 **Death / economy:** extra lives escalate (`EXTRA_LIFE_EVERY` × `EXTRA_LIFE_SCALE^n`). Death keeps a mult recovery seed (`DEATH_MULT_KEEP`, capped) + board cull — not hard ×1. Respawn freezes control (`RESPAWN_FREEZE_MS`) then remaining invuln with sticks live.
 
-**Vibe:** Fernhollow courtyard, 8-bit sprites, Sunseed multiplier, formation spawns, trauma camera. The playable loop is the same twin-stick arena.
+**Vibe:** neon arena, reactive grid, geom mult economy, formation spawns, trauma camera, hover-shadow geoms/enemies, SNES-title-inspired splash + chrome logo.
 
 Honest parity notes vs Geometry Wars: `docs/VS_GEOMETRY_WARS.md`  
 Tuning research / goldilocks goals: `docs/GAMEPLAY_TUNING_RESEARCH.md`  

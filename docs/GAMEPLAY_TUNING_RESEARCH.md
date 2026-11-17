@@ -1,6 +1,4 @@
-# Ryan and the Siege of Fernhollow — Gameplay tuning notes
-
-> Tuning notes for the twin-stick loop, which this reskin does not change. Player-facing name is Fernhollow.
+# Geometry Arena — Deep Research: Fine-Tuning Gameplay
 
 Research synthesis for tuning a Geometry Wars–style twin-stick arena shooter.  
 Mapped to **this codebase’s knobs** and what playtesting already revealed.

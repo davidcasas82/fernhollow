@@ -3,38 +3,66 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="description" content="Ryan and the Siege of Fernhollow — a kid-friendly twin-stick courtyard shooter. Move, aim, and fire sun-bolts." />
-  <meta name="theme-color" content="#1b2a6b" />
-  <title>Ryan and the Siege of Fernhollow</title>
+  <meta name="description" content="Geometry Arena — a twin-stick shooter. WASD + mouse or gamepad, survive the garden." />
+  <meta name="theme-color" content="#12101c" />
+  <title>Geometry Arena</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,800;1,900&family=Outfit:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,800;1,900&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%231b2a6b'/%3E%3Crect x='6' y='2' width='4' height='4' fill='%23f0d24a'/%3E%3Crect x='4' y='4' width='8' height='2' fill='%23f0d24a'/%3E%3Crect x='7' y='6' width='2' height='6' fill='%233d9a4a'/%3E%3C/svg%3E" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2305060c'/%3E%3Cpolygon points='70,50 30,72 38,50 30,28' fill='none' stroke='%237df9ff' stroke-width='6'/%3E%3C/svg%3E" />
 </head>
 <body>
   <!-- Full-screen 16-bit title splash (Battletoads / SNES-inspired) -->
-  <div id="splash" class="splash" role="dialog" aria-modal="true" aria-label="Ryan and the Siege of Fernhollow. Press start.">
-    <canvas id="title-canvas" width="480" height="270" aria-hidden="true"></canvas>
-    <h1 class="sr-only">Ryan and the Siege of Fernhollow</h1>
-    <p class="sr-only" id="splash-story">While the knights of Fernhollow were away in the far meadows, a band of mischievous forest creatures slipped into the castle courtyard and made off with the kingdom's golden crown. The courtyard is the heart of Fernhollow, and now wave after wave of odd little monsters come tumbling over the walls to keep the crown hidden. Only young Ryan, in his lucky green hoodie and a borrowed red neckerchief, is brave enough to stand in the middle of the stones and send them packing with sparks of sunlight-magic. He does not have to go looking for them. They come to him, faster and thicker as the night goes on. If Ryan can hold the courtyard, the crown will shine on Fernhollow once more.</p>
-    <p class="splash-prompt sr-only" id="splash-prompt">PRESS START</p>
+  <div id="splash" class="splash" role="dialog" aria-modal="true" aria-label="Geometry Arena title screen">
+    <div class="splash-stars" aria-hidden="true"></div>
+    <div class="splash-shapes" aria-hidden="true">
+      <span class="shape cube c1"></span>
+      <span class="shape cube c2"></span>
+      <span class="shape sphere s1"></span>
+      <span class="shape sphere s2"></span>
+      <span class="shape diamond d1"></span>
+      <span class="shape diamond d2"></span>
+      <span class="shape diamond d3"></span>
+      <span class="shape tri t1"></span>
+      <span class="shape tri t2"></span>
+      <span class="shape star st1"></span>
+      <span class="shape star st2"></span>
+      <span class="shape star st3"></span>
+      <span class="shape star st4"></span>
+      <span class="shape ring r1"></span>
+      <span class="shape ring r2"></span>
+    </div>
+    <div class="splash-logo">
+      <h1 class="logo-title" aria-label="Geometry Arena">
+        <span class="logo-line logo-geometry">
+          <span class="logo-fill">GEOMETRY</span>
+        </span>
+        <span class="logo-line logo-arena">
+          <span class="logo-fill">ARENA</span>
+        </span>
+      </h1>
+      <p class="logo-sub">TWIN-STICK · INK GARDEN</p>
+    </div>
+    <p class="splash-prompt" id="splash-prompt">PRESS ANY KEY · TAP TO START</p>
+    <div class="splash-scanlines" aria-hidden="true"></div>
   </div>
 
   <div id="app">
     <header class="top-bar">
-      <div class="brand" aria-label="Ryan and the Siege of Fernhollow" hidden>
+      <div class="brand" aria-label="Geometry Arena">
         <div class="brand-logo title-logo">
-          <span class="title-logo-line title-logo-geo"><span class="title-logo-fill">FERNHOLLOW</span></span>
+          <span class="title-logo-line title-logo-geo"><span class="title-logo-fill">GEOMETRY</span></span>
+          <span class="title-logo-line title-logo-arena"><span class="title-logo-fill">ARENA</span></span>
         </div>
       </div>
       <div class="stats">
-        <div class="stat score-stat">
+        <div class="stat">
           <span class="stat-label">Score</span>
           <span id="score" class="stat-value">0</span>
         </div>
         <div class="stat" id="level-stat">
-          <span class="stat-label" id="level-label">Wave</span>
+          <span class="stat-label" id="level-label">Level</span>
           <span id="level" class="stat-value">1</span>
         </div>
         <div class="stat path-obj-stat hidden" id="path-obj-stat">
@@ -42,20 +70,20 @@
           <span id="path-objective" class="stat-value path-obj-value">—</span>
         </div>
         <div class="stat accent">
-          <span class="stat-label" id="gun-label">Sun</span>
+          <span class="stat-label" id="gun-label">Needle</span>
           <span id="mult" class="stat-value">×1</span>
         </div>
-        <div class="stat lives-stat">
-          <span id="life-hearts" class="pip-row" aria-hidden="true"></span>
-          <span id="lives" class="sr-only">3</span>
+        <div class="stat">
+          <span class="stat-label">Lives</span>
+          <span id="lives" class="stat-value">3</span>
           <span id="life-meter" class="stat-meter" aria-hidden="true"><i style="width:0%"></i></span>
         </div>
         <div class="stat bomb-stat">
-          <span id="bomb-pips" class="pip-row" aria-hidden="true"></span>
-          <span id="bombs" class="sr-only">3</span>
+          <span class="stat-label">Bombs</span>
+          <span id="bombs" class="stat-value">3</span>
           <span id="bomb-meter" class="stat-meter" aria-hidden="true"><i style="width:0%"></i></span>
         </div>
-        <div class="stat best-stat">
+        <div class="stat">
           <span class="stat-label">Best</span>
           <span id="best" class="stat-value">0</span>
         </div>
@@ -63,7 +91,7 @@
     </header>
 
     <main class="stage-wrap">
-      <canvas id="game" width="1600" height="900" aria-label="Fernhollow courtyard"></canvas>
+      <canvas id="game" width="1600" height="900" aria-label="Geometry Arena playfield"></canvas>
 
       <!-- Mobile twin-stick layer (shown only while playing on touch devices) -->
       <div id="touch-controls" class="touch-controls hidden" aria-hidden="true">
@@ -86,14 +114,14 @@
         <!-- Live-grid title menu (post-splash / menu state) -->
         <div id="title-menu" class="title-menu">
           <div class="title-logo" aria-hidden="true">
-            <span class="title-logo-line title-logo-geo"><span class="title-logo-fill">FERNHOLLOW</span></span>
-            <span class="title-logo-line title-logo-arena"><span class="title-logo-fill">SIEGE</span></span>
+            <span class="title-logo-line title-logo-geo"><span class="title-logo-fill">GEOMETRY</span></span>
+            <span class="title-logo-line title-logo-arena"><span class="title-logo-fill">ARENA</span></span>
           </div>
-          <p class="title-tag">Hold the courtyard. Scoop the Sunseeds.</p>
+          <p class="title-tag">Survive. Scoop the gems. Chase the high score.</p>
 
           <div class="title-actions">
             <button id="start-btn" class="btn arcade stacked" type="button">
-              <span class="btn-main">COURTYARD</span>
+              <span class="btn-main">ENDLESS</span>
               <span class="btn-sub">One run. High score.</span>
             </button>
             <button id="path-btn" class="btn arcade path-cta stacked" type="button">
@@ -105,14 +133,14 @@
           <button id="help-btn" class="title-help" type="button">How to play</button>
 
           <ul id="how-to" class="how-to title-howto hidden">
-            <li>Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>. Drag to aim. Hold click to fire sun-bolts.</li>
+            <li>Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>. Drag to aim. Hold click to fire.</li>
             <li>Gamepad: left stick move · right stick aim · RT fire · LT bomb · D-pad menus</li>
             <li class="how-touch">Phone: left thumb move · right thumb aim + fire · BOMB button</li>
-            <li>Clear the creatures, then scoop gold Sunseeds to raise your multiplier.</li>
-            <li>×45 twin bolts. ×110 triple. A hit keeps a seed — not zero.</li>
-            <li>Pufflings waddle. Thistle Jays dash. Acorn Spinners orbit. Gust Blooms tug you closer.</li>
-            <li><kbd>Space</kbd> is a Royal Burst (no points). Hearts and bombs fill the meters.</li>
-            <li>Courtyard is one long run. Stages is eight short levels.</li>
+            <li>Kill shapes, then scoop the amber gems to raise your multiplier.</li>
+            <li>×45 dual stream. ×110 triple. Death keeps a seed — not zero.</li>
+            <li>Thorns volley. Jaws bite. Gyros orbit. Maw pulls you in.</li>
+            <li><kbd>Space</kbd> bomb clears the board (no points). Extra lives/bombs fill the HUD meters.</li>
+            <li>Endless is one long run. Stages is eight short levels.</li>
             <li><kbd>P</kbd> pauses.</li>
           </ul>
         </div>
@@ -121,7 +149,7 @@
         <div id="interrupt-panel" class="panel interrupt-panel hidden">
           <div class="panel-glow"></div>
           <h2 id="overlay-title">Paused</h2>
-          <p id="overlay-message">Take a breath. The courtyard can wait.</p>
+          <p id="overlay-message">Take a breath. The shapes can wait.</p>
           <div class="interrupt-actions">
             <button id="interrupt-btn" class="btn arcade compact" type="button">Resume</button>
             <button id="title-btn" class="btn secondary compact hidden" type="button">Title</button>
@@ -133,11 +161,11 @@
             <li>Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>. Drag to aim. Hold click to fire.</li>
             <li>Gamepad: left stick move · right stick aim · RT fire · LT bomb · D-pad menus</li>
             <li class="how-touch">Phone: left thumb move · right thumb aim + fire · BOMB button</li>
-            <li>Clear the creatures, then scoop gold Sunseeds to raise your multiplier.</li>
-            <li>×45 twin bolts. ×110 triple. A hit keeps a seed — not zero.</li>
-            <li>Pufflings waddle. Thistle Jays dash. Acorn Spinners orbit. Gust Blooms tug you closer.</li>
-            <li><kbd>Space</kbd> is a Royal Burst (no points). Hearts and bombs fill the meters.</li>
-            <li>Courtyard is one long run. Stages is eight short levels.</li>
+            <li>Kill shapes, then scoop the yellow gems to raise your multiplier.</li>
+            <li>×45 dual stream. ×110 triple. Death keeps a seed — not zero.</li>
+            <li>Thorns volley. Jaws bite. Gyros orbit. Maw pulls you in.</li>
+            <li><kbd>Space</kbd> bomb clears the board (no points). Extra lives/bombs fill the HUD meters.</li>
+            <li>Endless is one long run. Stages is eight short levels.</li>
             <li><kbd>P</kbd> pauses.</li>
           </ul>
         </div>
@@ -145,7 +173,7 @@
         <!-- Arena Path map (live-grid overlay) -->
         <div id="path-map" class="path-map hidden" role="dialog" aria-label="Arena Path">
           <header class="path-map-head">
-            <p class="path-kicker">FERNHOLLOW PATH</p>
+            <p class="path-kicker">ARENA PATH</p>
             <h2 class="path-map-title">SELECT LEVEL</h2>
             <p class="path-map-stars">STARS <span id="path-map-stars">0/24</span></p>
           </header>
@@ -156,8 +184,8 @@
             <div class="path-focus-top">
               <span id="path-focus-order" class="path-focus-order">01</span>
               <div class="path-focus-copy">
-                <h3 id="path-focus-name" class="path-focus-name">Courtyard Dawn</h3>
-                <p id="path-focus-tag" class="path-focus-tag">Learn the stones.</p>
+                <h3 id="path-focus-name" class="path-focus-name">Grid Wake</h3>
+                <p id="path-focus-tag" class="path-focus-tag">Learn the neon floor.</p>
               </div>
             </div>
             <div class="path-focus-badges">
@@ -180,14 +208,14 @@
         <div id="path-brief" class="path-brief hidden" role="dialog" aria-label="Level brief">
           <p class="path-kicker">LEVEL BRIEF</p>
           <p id="brief-order" class="brief-order">1 / 8</p>
-          <h2 id="brief-name" class="brief-name">Courtyard Dawn</h2>
-          <p id="brief-tag" class="brief-tag">Learn the stones.</p>
+          <h2 id="brief-name" class="brief-name">Grid Wake</h2>
+          <p id="brief-tag" class="brief-tag">Learn the neon floor.</p>
           <div class="brief-badges">
             <span id="brief-mode" class="path-badge mode">EVOLVED</span>
             <span id="brief-arena" class="path-badge arena">RECT</span>
           </div>
           <p id="brief-objective" class="brief-objective">SURVIVE 60S</p>
-          <p id="brief-lesson" class="brief-lesson">Strafe, scoop Sunseeds, trust the sun-bolts.</p>
+          <p id="brief-lesson" class="brief-lesson">Strafe, scoop geoms, trust the needle gun.</p>
           <div class="path-map-actions brief-actions">
             <button id="brief-start-btn" class="btn arcade compact" type="button">START</button>
             <button id="brief-back-btn" class="btn secondary compact" type="button">BACK</button>
@@ -244,7 +272,7 @@
             <span class="gameover-line gameover-game"><span class="gameover-fill comic-stamp" data-stamp="GAME">GAME</span></span>
             <span class="gameover-line gameover-over"><span class="gameover-fill comic-stamp" data-stamp="OVER">OVER</span></span>
           </div>
-          <p class="gameover-tag">THE COURTYARD GROWS QUIET</p>
+          <p class="gameover-tag">THE GARDEN GOES STILL</p>
 
           <div class="gameover-stats" aria-live="polite">
             <div class="go-stat">

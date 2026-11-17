@@ -68,7 +68,7 @@ export function compositeBloom(mainCtx, worldCanvas, buffers, opts = {}) {
   mainCtx.save();
   mainCtx.globalCompositeOperation = "lighter";
   mainCtx.globalAlpha = tightStr;
-  mainCtx.imageSmoothingEnabled = false;
+  mainCtx.imageSmoothingEnabled = true;
   mainCtx.drawImage(tight, 0, 0, worldCanvas.width, worldCanvas.height);
   mainCtx.restore();
 
@@ -84,7 +84,7 @@ export function compositeBloom(mainCtx, worldCanvas, buffers, opts = {}) {
     mainCtx.save();
     mainCtx.globalCompositeOperation = "lighter";
     mainCtx.globalAlpha = wideStr;
-    mainCtx.imageSmoothingEnabled = false;
+    mainCtx.imageSmoothingEnabled = true;
     mainCtx.drawImage(wide, 0, 0, worldCanvas.width, worldCanvas.height);
     mainCtx.restore();
   }
@@ -111,7 +111,7 @@ export function compositeChromatic(mainCtx, worldCanvas, trauma, dpr) {
   mainCtx.save();
   mainCtx.globalCompositeOperation = "screen";
   mainCtx.globalAlpha = alpha;
-  mainCtx.imageSmoothingEnabled = false;
+  mainCtx.imageSmoothingEnabled = true;
 
   // Warm / red fringe
   mainCtx.filter = "sepia(1) saturate(7) hue-rotate(-40deg) brightness(1.18)";
