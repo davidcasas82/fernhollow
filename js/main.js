@@ -1,6 +1,7 @@
 import { artBook, loadArt } from "./art.js";
 import { Game } from "./game.js";
 import { mountTitleScreen } from "./title-screen.js";
+import { mountUiFrames, paintUi, placeMenuCursor } from "./ui-frames.js";
 import {
   applyGfxQuality,
   GFX,
@@ -269,6 +270,7 @@ function setOverlayMode(mode) {
   if (mode !== "gameover" && gameoverMenu) gameoverMenu.classList.remove("entering");
   if (mode !== "title" && titleMenu) titleMenu.classList.remove("entering");
   if (mode !== "path-result" && pathResult) pathResult.classList.remove("entering");
+  if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => paintUi());
 }
 
 function resetPanelHelp() {
@@ -291,6 +293,7 @@ function applyUiFocus(els, index) {
   if (!els.length) return;
   uiFocus = ((index % els.length) + els.length) % els.length;
   els.forEach((el, i) => el.classList.toggle("is-focused", i === uiFocus));
+  placeMenuCursor();
 }
 
 function stepUiFocus(els, delta) {
@@ -420,6 +423,7 @@ function showWaveBanner(text, kicker = "The siege", hold = false) {
   if (waveBannerKicker) waveBannerKicker.textContent = kicker;
   waveBannerText.textContent = text;
   waveBanner.classList.remove("hidden");
+  paintUi();
   if (bannerTimer) clearTimeout(bannerTimer);
   bannerTimer = 0;
   if (!hold) {
@@ -1026,6 +1030,7 @@ const ui = {
         frac = (m - MULT_FOR_DUAL) / (MULT_FOR_TRIPLE - MULT_FOR_DUAL);
       }
       xpBar.style.width = `${Math.max(2, Math.round(Math.min(1, frac) * 100))}%`;
+      paintUi();
     }
   },
   updateGun(n) {
@@ -1046,6 +1051,7 @@ const ui = {
     if (healthBar) {
       const frac = Math.max(0, Math.min(1, Number(n) / MAX_LIVES));
       healthBar.style.width = `${Math.round(frac * 100)}%`;
+      paintUi();
     }
   },
   updateBombs(n) {
@@ -1291,6 +1297,7 @@ try {
 }
 mountTitleScreen(document.getElementById("title-canvas"));
 paintFxChips();
+mountUiFrames();
 
 /** Assigned after UI helpers so splash dismiss can safely optional-chain audio. */
 game = new Game(canvas, ui);

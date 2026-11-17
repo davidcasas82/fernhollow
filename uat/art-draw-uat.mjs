@@ -50,6 +50,9 @@ function recorder() {
     rotate(a) {
       calls.push(["rotate", a]);
     },
+    transform(a, b, c, d, e, f) {
+      calls.push(["transform", a, b, c, d, e, f]);
+    },
     drawImage(...args) {
       calls.push(["drawImage", ...args]);
     },
@@ -84,6 +87,9 @@ function assertSprites(ctx, label) {
 const { parseAtlas, bindArt, clipFrame } = await import(js("art.js"));
 const { drawPlayer, drawEnemies, drawBullets, drawGeoms, drawHudIcons } = await import(
   js("render.js")
+);
+const { drawPanel, drawButton, drawBanner, drawBar, drawCursor } = await import(
+  js("ui-frames.js")
 );
 
 const atlas = JSON.parse(fs.readFileSync(path.join(root, "assets/art/atlas.json"), "utf8"));
@@ -224,5 +230,47 @@ drawHudIcons(ctx, 3, 2);
 draws = assertSprites(ctx, "hud");
 assert.equal(draws.length, 5);
 assert.ok(draws.every((c) => c[1].__artFile === "fx.png"));
+
+assert.equal(book.ui.image.__artFile, "ui-frames.png");
+assert.equal(book.ui.scale, 2);
+assert.equal(book.ui.cells.cursor.hotspot.x, 0);
+assert.equal(book.ui.cells.cursor.hotspot.y, 6);
+assert.ok(fs.existsSync(path.join(root, "assets/art/favicon-16.png")));
+assert.ok(fs.existsSync(path.join(root, "assets/art/favicon-32.png")));
+
+function assertUi(label) {
+  const drawn = assertSprites(ctx, label);
+  assert.ok(
+    drawn.every((c) => c[1].__artFile === "ui-frames.png" && c[8] / c[4] === 2 && c[9] / c[5] === 2),
+    `${label} did not stay on ui-frames at scale 2`
+  );
+  return drawn;
+}
+
+ctx.calls.length = 0;
+drawPanel(ctx, book.ui, 320, 240);
+assertUi("panel");
+
+ctx.calls.length = 0;
+drawButton(ctx, book.ui, 240, 48);
+assertUi("button");
+
+ctx.calls.length = 0;
+drawBanner(ctx, book.ui);
+assertUi("banner");
+
+ctx.calls.length = 0;
+drawBar(ctx, book.ui, 192, 24, "heart", 0.5);
+assertUi("heart bar");
+
+ctx.calls.length = 0;
+drawBar(ctx, book.ui, 192, 24, "sun", 1);
+assertUi("sun bar");
+
+ctx.calls.length = 0;
+drawCursor(ctx, book.ui);
+const cursorDraw = assertUi("cursor");
+assert.equal(cursorDraw[0][2], book.ui.cells.cursor.sx);
+assert.equal(cursorDraw[0][3], book.ui.cells.cursor.sy);
 
 console.log("art-draw-uat: sprites come from the atlas");

@@ -339,14 +339,7 @@ body.pixel-title .title-menu .btn:hover {
 
 .btn.is-focused::before,
 .blessing.is-focused::before {
-  content: ">";
-  position: absolute;
-  left: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-family: "Press Start 2P", monospace;
-  font-size: 10px;
-  color: #1a1420;
+  content: none;
 }
 
 .btn,
@@ -669,6 +662,121 @@ body.shot-title .top-bar,
 body.shot-title .bottom-bar,
 body.shot-title #overlay {
   visibility: hidden;
+}
+
+/* Frames come from ui-frames.png. These hosts only hold that canvas. */
+.title-menu,
+.interrupt-panel,
+.king-panel,
+.path-map,
+.path-brief,
+.path-result,
+.gameover-menu,
+.stat,
+.stat.accent,
+.stat.bomb-stat,
+.loading-card,
+.btn,
+.btn.arcade,
+.btn.secondary,
+.blessing,
+.touch-fab,
+.title-help,
+#wave-banner,
+.stat-meter {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.ui-sheet-host {
+  position: relative;
+  isolation: isolate;
+}
+
+.ui-sheet {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+button.btn,
+button.blessing,
+button.touch-fab,
+button.title-help {
+  color: #fff4dc;
+  min-height: 48px;
+}
+
+button.btn .ui-sheet,
+button.blessing .ui-sheet,
+button.touch-fab .ui-sheet,
+button.title-help .ui-sheet {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.stat-meter {
+  height: 24px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.stat-meter i {
+  display: none;
+}
+
+.stage-wrap {
+  position: relative;
+}
+
+#wave-banner {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  width: 320px;
+  height: 64px;
+  min-width: 0;
+  padding: 10px 18px 0;
+}
+
+#wave-banner .wave-kicker,
+#wave-banner .wave-text {
+  margin: 0;
+  line-height: 1.4;
+}
+
+#wave-banner .wave-text {
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.loading-screen {
+  background: #14285a;
+}
+
+.loading-card {
+  width: min(440px, 86vw);
+  padding: 28px 22px 22px;
+  text-align: center;
+}
+
+.loading-card .king-title {
+  color: #1a1420;
+}
+
+.menu-cursor {
+  position: fixed;
+  z-index: 40;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  image-rendering: pixelated;
 }
 
 .touch-bomb,

@@ -777,7 +777,7 @@ export function topologyLabel(id) {
     case "split":
       return "SPLIT";
     default:
-      return String(id || "ARENA").toUpperCase();
+      return String(id || "YARD").toUpperCase();
   }
 }
 
