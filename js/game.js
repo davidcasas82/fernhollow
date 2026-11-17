@@ -1737,8 +1737,6 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     addTrauma(this.cam, 0.72, { big: true });
     punchZoom(this.cam, 0.12);
     this._gridPulse(this.player.x, this.player.y, 4.5);
-    this.particles.shockwave(this.player.x, this.player.y, COLORS.bomb, 620);
-    this.particles.shockwave(this.player.x, this.player.y, COLORS.paper || "#fff4dc", 400);
     this.particles.burst(this.player.x, this.player.y, COLORS.bomb, 16, 200);
     this._artFx("poof", this.player.x, this.player.y);
 

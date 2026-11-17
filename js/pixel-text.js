@@ -64,7 +64,8 @@ export function drawText(ctx, text, x, y, scale, color, outline) {
   ctx.fillStyle = color;
   let cx = x;
   for (const ch of str) {
-    const g = GLYPH[ch] || GLYPH[" "];
+    const key = ch === "×" || ch === "✕" ? "X" : ch;
+    const g = GLYPH[key] || GLYPH[" "];
     for (let row = 0; row < 7; row++) {
       const bits = g[row] || 0;
       for (let col = 0; col < 5; col++) {

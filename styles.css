@@ -2741,12 +2741,11 @@ body.touch-ui .title-menu {
   display: block;
   position: relative;
   font-family: var(--display);
-  font-weight: 900;
-  font-style: italic;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  /* chunky “pixel” edges without sacrificing scale */
-  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.4);
+  -webkit-text-stroke: 0;
 }
 
 .logo-geometry {
