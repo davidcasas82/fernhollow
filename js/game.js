@@ -91,6 +91,7 @@ import {
 } from "./camera.js";
 import { Input } from "./input.js";
 import { ParticleSystem } from "./particles.js";
+import { BoltFx } from "./magic-bolts.js";
 import { circlesOverlap } from "./physics.js";
 import {
   dumpRunsToConsole,
@@ -107,7 +108,6 @@ import {
   drawAimReticle,
   drawArtFx,
   drawBombFlash,
-  drawBullets,
   drawEnemies,
   drawFloorShadows,
   drawGeoms,
@@ -119,7 +119,7 @@ import {
   enemyIsOutline,
 } from "./render.js";
 import { clampToFloor, drawCourtyard, facing4, insideFloor } from "./art.js";
-import { applyKnock, enemyFrame, fxLife, knock, TIMING } from "./motion.js";
+import { applyKnock, enemyFrame, fxLife, knock, ryanWalkIndex, TIMING } from "./motion.js";
 import {
   compositeBloom,
   compositeChromatic,
@@ -156,6 +156,7 @@ export class Game {
     this.geoms = [];
     this.gridImpulses = [];
     this.particles = new ParticleSystem();
+    this.bolts = new BoltFx();
     this.audio = new AudioBus();
 
     this.score = 0;
@@ -413,6 +414,7 @@ start(opts = {}) {
     this.geoms = [];
     this.gridImpulses = [];
     this.particles.clear();
+    this.bolts.clear();
     this.player = createPlayer();
     resetCamera(this.cam);
     // Opening mercy invincibility (shmup/GW-style spawn protection)
@@ -983,6 +985,7 @@ this.modeFlags = new Set();
     this.afterimages = [];
     this.geomVacuum = 0;
     this.particles.clear();
+    this.bolts.clear();
     this.player = createPlayer();
     resetCamera(this.cam);
     this.ui.updateScore(0);
@@ -2227,15 +2230,20 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
       if (this.mult >= MULT_FOR_TRIPLE) {
         angles = [a - FIRE_SPREAD, a, a + FIRE_SPREAD];
       }
-      const hand = ryanHandPoint(this.player.x, this.player.y, facing4(a));
+      const moving = Math.hypot(this.player.vx, this.player.vy) > 12;
+      const hand = ryanHandPoint(
+        this.player.x,
+        this.player.y,
+        facing4(a),
+        moving ? ryanWalkIndex(this.player) : null
+      );
       for (const ang of angles) {
-        this.bullets.push(createBullet(hand.x, hand.y, ang, { atPoint: true }));
+        this.bullets.push(createBullet(hand.x, hand.y, ang));
       }
       this.player.fireCd = this._fireCooldown();
       this.audio.shoot(this.mult);
       recoil(this.cam, a, 5.2);
-      this.particles.burst(hand.x, hand.y, COLORS.paper || "#fff4dc", 10, 220);
-      this.particles.burst(hand.x, hand.y, COLORS.bomb, 6, 160);
+      this.bolts.sparkle(hand.x, hand.y);
       this._gridPulse(hand.x, hand.y, 0.28);
     }
 
@@ -2279,7 +2287,8 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
       if (this.afterimages[i].life <= 0) this.afterimages.splice(i, 1);
     }
 
-    updateBullets(this.bullets, dt);
+    updateBullets(this.bullets, dt, (b) => this.bolts.puff(b.x, b.y));
+    this.bolts.step(this.bullets, dt);
     const { atoms } = updateEnemies(this.enemies, this.player, dt, this.elapsed);
     if (atoms.length) {
       const atomCap = Math.min(
@@ -2327,6 +2336,7 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
         if (e.dead) continue;
         if (this._bulletHitsEnemy(b, e)) {
           b.dead = true;
+          this.bolts.puff(b.x, b.y);
           e.hp -= 1;
           const lethal = e.hp <= 0;
           this._sting(e, 1, b.vx, b.vy, (e.maxHp || 1) > 1 ? 210 : 150);
@@ -2422,7 +2432,10 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     for (const e of this.enemies) clampToFloor(e);
     for (const g of this.geoms) clampToFloor(g);
     for (const b of this.bullets) {
-      if (!insideFloor(b)) b.dead = true;
+      if (!insideFloor(b)) {
+        if (!b.dead) this.bolts.puff(b.x, b.y);
+        b.dead = true;
+      }
     }
   }
 
@@ -2479,11 +2492,11 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     // …then shapes hovering above
     drawGeoms(wctx, this.geoms, this.time);
     drawEnemies(wctx, this.enemies, this.time);
-    drawBullets(wctx, this.bullets, this.time);
     drawArtFx(wctx, this.artFx, this.time);
     drawAfterimages(wctx, this.afterimages);
     drawRyanDeaths(wctx, this.ryanDeaths);
     drawPlayer(wctx, this.player, this.time);
+    this.bolts.draw(wctx, this.bullets, this.time);
     this.particles.draw(wctx);
     drawDamageNumbers(wctx, this.damageNums);
     if (this.state === "playing" && !GFX.PIXEL_ART) {

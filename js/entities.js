@@ -91,9 +91,8 @@ export function updatePlayer(player, move, aimAngle, dt, firing) {
 }
 
 /**
- * Offset from Ryan's center to the v7 muzzle star.
- * Measured on the shoot cell of ryan.png. Walk-and-shoot bobs a couple of
- * pixels around the same hand. Down is the raised hand on screen right.
+ * Offset from Ryan's center to the muzzle star on the standing shoot cell.
+ * Down is the raised hand on screen right.
  */
 export const RYAN_HAND = {
   down: { x: 30, y: -3 },
@@ -102,18 +101,50 @@ export const RYAN_HAND = {
   right: { x: 23, y: 1 },
 };
 
-export function ryanHandPoint(x, y, dir) {
-  const hand = RYAN_HAND[dir] || RYAN_HAND.down;
+/**
+ * Same star on walk-and-shoot columns 6–9, one entry per frame.
+ * The body bobs a pixel, so the hand is not the standing cell every step.
+ */
+export const RYAN_WALK_HAND = {
+  down: [
+    { x: 30, y: -4 },
+    { x: 30, y: -3 },
+    { x: 30, y: -4 },
+    { x: 30, y: -3 },
+  ],
+  up: [
+    { x: 17, y: -23 },
+    { x: 17, y: -22 },
+    { x: 17, y: -23 },
+    { x: 17, y: -22 },
+  ],
+  left: [
+    { x: -22, y: -1 },
+    { x: -22, y: -2 },
+    { x: -22, y: -1 },
+    { x: -22, y: -2 },
+  ],
+  right: [
+    { x: 23, y: 1 },
+    { x: 23, y: 0 },
+    { x: 23, y: 1 },
+    { x: 23, y: 0 },
+  ],
+};
+
+export function ryanHandPoint(x, y, dir, frame = null) {
+  const walk = frame == null ? null : RYAN_WALK_HAND[dir];
+  const hand = (walk && walk[frame]) || RYAN_HAND[dir] || RYAN_HAND.down;
   return { x: x + hand.x, y: y + hand.y };
 }
 
-export function createBullet(x, y, angle, opts = {}) {
+/** Spawn at (x, y). The caller passes the hand point. */
+export function createBullet(x, y, angle) {
   const c = Math.cos(angle);
   const s = Math.sin(angle);
-  const nudge = opts.atPoint ? 0 : PLAYER_RADIUS + 4;
   return {
-    x: x + c * nudge,
-    y: y + s * nudge,
+    x,
+    y,
     vx: c * BULLET_SPEED,
     vy: s * BULLET_SPEED,
     r: BULLET_RADIUS,
@@ -122,7 +153,7 @@ export function createBullet(x, y, angle, opts = {}) {
   };
 }
 
-export function updateBullets(bullets, dt) {
+export function updateBullets(bullets, dt, onExpire) {
   const arena = arenaOrDefault();
   const w = arena.worldW;
   const h = arena.worldH;
@@ -135,17 +166,15 @@ export function updateBullets(bullets, dt) {
       // Torus: wrap forever until lifetime ends
       b.x = ((b.x % w) + w) % w;
       b.y = ((b.y % h) + h) % h;
-      if (b.life <= 0 || b.dead) bullets.splice(i, 1);
+      if (b.life <= 0 || b.dead) {
+        if (onExpire && b.life <= 0 && !b.dead) onExpire(b);
+        bullets.splice(i, 1);
+      }
       continue;
     }
-    if (
-      b.life <= 0 ||
-      b.x < -20 ||
-      b.y < -20 ||
-      b.x > w + 20 ||
-      b.y > h + 20 ||
-      b.dead
-    ) {
+    const left = b.x < -20 || b.y < -20 || b.x > w + 20 || b.y > h + 20;
+    if (b.life <= 0 || left || b.dead) {
+      if (onExpire && !b.dead && (b.life <= 0 || left)) onExpire(b);
       bullets.splice(i, 1);
     }
   }
