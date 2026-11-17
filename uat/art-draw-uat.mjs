@@ -157,6 +157,68 @@ draws = assertSprites(ctx, "ryan shoot");
 assert.equal(draws[0][2], 400);
 assert.equal(draws[0][3], 288);
 
+function assertWalkFrame(label, player, dir, index) {
+  ctx.calls.length = 0;
+  drawPlayer(ctx, player, 0);
+  const drawn = assertSprites(ctx, label);
+  const frame = book.sheets.ryan.clips[`walk_${dir}`].frames[index];
+  assert.equal(drawn[0][1].__artFile, "ryan.png", label);
+  assert.equal(drawn[0][2], frame.sx, `${label} sx`);
+  assert.equal(drawn[0][3], frame.sy, `${label} sy`);
+  assert.equal(drawn[0][4], frame.sw, `${label} sw`);
+  assert.equal(drawn[0][5], frame.sh, `${label} sh`);
+  assert.equal(ctx.imageSmoothingEnabled, false, label);
+  return drawn;
+}
+
+// Moving while firing uses walk_<aim> and the distance index, not the shoot cell.
+const walkFire = {
+  x: 400,
+  y: 500,
+  vx: 90,
+  vy: 0,
+  angle: -Math.PI / 2,
+  fireCd: 0.2,
+  r: 13,
+  invuln: 0,
+  step: 0,
+};
+for (let index = 0; index < 4; index++) {
+  walkFire.step = index * 16;
+  assertWalkFrame(`ryan walk while firing up ${index}`, walkFire, "up", index);
+}
+walkFire.vx = 0;
+walkFire.vy = 80;
+walkFire.angle = Math.PI;
+walkFire.fireCd = 0.2;
+walkFire.step = 16;
+assertWalkFrame("ryan walk while firing left", walkFire, "left", 1);
+walkFire.step = 48;
+assertWalkFrame("ryan walk while firing left advances", walkFire, "left", 3);
+
+ctx.calls.length = 0;
+drawPlayer(
+  ctx,
+  {
+    x: 400,
+    y: 500,
+    vx: 90,
+    vy: 0,
+    angle: 0,
+    fireCd: 0.2,
+    r: 13,
+    invuln: 0,
+    hurt: 0.1,
+    face: "right",
+    step: 32,
+  },
+  0
+);
+draws = assertSprites(ctx, "ryan hurt while moving and firing");
+assert.equal(draws[0][1].__artFile, "ryan-extra.png");
+assert.equal(draws[0][2], 240);
+assert.equal(draws[0][3], 0);
+
 const samples = [
   ["wanderer", "puffling.png"],
   ["diamond", "thistle-jay.png"],

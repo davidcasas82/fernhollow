@@ -409,8 +409,10 @@ function ryanPose(player, t) {
   player.face = dir;
   if (player.deathAge != null) return { dir, clip: `death_${dir}`, time: player.deathAge, index: null };
   if ((player.hurt || 0) > 0) return { dir, clip: `hurt_${dir}`, time: 0, index: null };
-  if (shooting) return { dir, clip: `shoot_${dir}`, time: t, index: null };
+  // Moving keeps the walk cycle, including while fireCd is up. Aim still
+  // chooses the facing above. The one-frame shoot pose is for standing still.
   if (moving) return { dir, clip: `walk_${dir}`, time: t, index: ryanWalkIndex(player) };
+  if (shooting) return { dir, clip: `shoot_${dir}`, time: t, index: null };
   return { dir, clip: `idle_${dir}`, time: t, index: null };
 }
 
