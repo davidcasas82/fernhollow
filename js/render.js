@@ -1,6 +1,5 @@
 import {
   COLORS,
-  ENEMY,
   GEOM_FADE_SEC,
   GEOM_LIFE,
   GFX,
@@ -12,7 +11,8 @@ import {
   WORLD_W,
 } from "./constants.js";
 import { snakeSegments } from "./entities.js";
-import { bloom, colorWithAlpha, neonFillStroke, neonStroke } from "./fx.js";
+import { bloom, colorWithAlpha, neonStroke } from "./fx.js";
+import { artBook, drawClip, drawFrame, facing4 } from "./art.js";
 
 /** Enemy still in red-outline telegraph phase (no solid fill / no collision). */
 export function enemyIsOutline(e) {
@@ -394,172 +394,37 @@ function hoverY(y, bob = 0) {
 }
 
 /** Motion-blur afterimages of the ship */
-export function drawAfterimages(ctx, images) {
-  ctx.save();
-  ctx.globalCompositeOperation = "source-over";
-  for (let i = 0; i < images.length; i++) {
-    const im = images[i];
-    const lifeA = im.life != null ? Math.max(0, im.life / 0.18) : 1;
-    const a = ((i + 1) / (images.length + 1)) * 0.4 * lifeA;
-    ctx.save();
-    ctx.globalAlpha = a;
-    ctx.translate(im.x, hoverY(im.y));
-    ctx.rotate(im.angle);
-    const vis = (GFX.SHIP_DRAW || 1.38) * 11;
-    clawPath(ctx, vis);
-    ctx.fillStyle = colorWithAlpha(COLORS.paper || "#fff4dc", 0.55);
-    ctx.fill();
-    ctx.strokeStyle = COLORS.player;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
-  }
-  ctx.restore();
-}
-
-function clawPath(ctx, r) {
-  // Classic twin-stick "claw / arrowhead" silhouette
-  ctx.beginPath();
-  ctx.moveTo(r + 5, 0);
-  ctx.lineTo(-r * 0.55, r * 0.95);
-  ctx.lineTo(-r * 0.15, r * 0.28);
-  ctx.lineTo(-r * 0.85, 0);
-  ctx.lineTo(-r * 0.15, -r * 0.28);
-  ctx.lineTo(-r * 0.55, -r * 0.95);
-  ctx.closePath();
-}
+export function drawAfterimages() {}
 
 export function drawPlayer(ctx, player, t = 0) {
-  const invuln = player.invuln > 0;
-  // Classic shmup blink, but keep a shield ring so grace is obvious
-  const flashHide = invuln && Math.floor(player.invuln / 80) % 2 === 0;
-  const bob = Math.sin(t * 5.5) * 1.2; // gentle hover bob
-
-  ctx.save();
-  ctx.translate(player.x, hoverY(player.y, bob));
-
-  if (invuln) {
-    const pulse = 0.65 + 0.35 * Math.sin(t * 14);
-    const shieldR = player.r + 14 + pulse * 4;
-    bloom(ctx, 0, 0, shieldR * 1.6, COLORS.player, 0.35 * pulse);
-    ctx.beginPath();
-    ctx.arc(0, 0, shieldR, 0, Math.PI * 2);
-    ctx.strokeStyle = colorWithAlpha(COLORS.player, 0.35 + 0.4 * pulse);
-    ctx.lineWidth = 2.2;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(0, 0, shieldR * 0.72, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.25 + 0.35 * pulse})`;
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-  }
-
-  if (flashHide) {
-    ctx.restore();
-    return;
-  }
-
-  ctx.rotate(player.angle);
-
-  const vis = player.r * (GFX.SHIP_DRAW || 1.38);
-  const pulse = 0.7 + 0.3 * Math.sin(t * 18);
-  ctx.beginPath();
-  ctx.moveTo(-vis * 0.95, 0);
-  ctx.lineTo(-vis * 1.55 * pulse, vis * 0.22);
-  ctx.lineTo(-vis * 1.55 * pulse, -vis * 0.22);
-  ctx.closePath();
-  ctx.fillStyle = COLORS.playerGlow;
-  ctx.fill();
-  ctx.strokeStyle = "#12101c";
-  ctx.lineWidth = 1.6;
-  ctx.stroke();
-
-  clawPath(ctx, vis);
-  ctx.fillStyle = COLORS.paper || "#fff4dc";
-  ctx.fill();
-  ctx.strokeStyle = "#12101c";
-  ctx.lineWidth = 2.1;
-  ctx.lineJoin = "round";
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(vis * 0.12, 0, vis * 0.2, 0, Math.PI * 2);
-  ctx.fillStyle = COLORS.playerGlow;
-  ctx.fill();
-  ctx.strokeStyle = "#12101c";
-  ctx.lineWidth = 1.1;
-  ctx.stroke();
-
-  ctx.restore();
+  const sheet = artBook()?.sheets?.ryan;
+  if (!ctx || !player || !sheet) return;
+  const moving = Math.hypot(player.vx || 0, player.vy || 0) > 12;
+  const shooting = (player.fireCd || 0) > 0;
+  let dir = player.face || "down";
+  if (shooting) dir = facing4(player.angle || 0);
+  else if (moving) dir = facing4(Math.atan2(player.vy, player.vx));
+  player.face = dir;
+  if (player.invuln > 0 && Math.floor(player.invuln / 80) % 2 === 0) return;
+  const clip = shooting ? `shoot_${dir}` : moving ? `walk_${dir}` : `idle_${dir}`;
+  drawClip(ctx, sheet, clip, t, player.x, player.y);
 }
 
-export function drawBullets(ctx, bullets) {
-  ctx.save();
-  ctx.globalCompositeOperation = "source-over";
-  ctx.lineCap = "round";
-  const fat = GFX.BULLET_DRAW || 2.4;
-  const dart = GFX.BULLET_LEN || 18;
+export function drawBullets(ctx, bullets, t = 0) {
+  const sheet = artBook()?.sheets?.fx;
+  if (!ctx || !sheet || !bullets) return;
   for (const b of bullets) {
-    const bx = b.x;
-    const by = hoverY(b.y, 2);
-    const r = (b.r + 1.2) * fat;
-
-    if ((GFX.FLOOR_SHADOWS || "all") === "all") {
-      drawFloorShadow(ctx, b.x, b.y, r * 1.4, 0.2);
-    }
-
-    const sp = Math.hypot(b.vx, b.vy) || 1;
-    const nx = b.vx / sp;
-    const ny = b.vy / sp;
-    const hx = nx * dart;
-    const hy = ny * dart;
-    const tx = nx * dart * 0.55;
-    const ty = ny * dart * 0.55;
-
-    const tail = COLORS.bulletTail || COLORS.danger || "#ff4d4d";
-    const tip = COLORS.bulletCore || COLORS.paper || "#fff4dc";
-
-    bloom(ctx, bx - tx * 0.35, by - ty * 0.35, r * 3.2, tail, 0.38);
-
-    ctx.strokeStyle = "#12101c";
-    ctx.lineWidth = r * 1.9;
-    ctx.beginPath();
-    ctx.moveTo(bx - tx, by - ty);
-    ctx.lineTo(bx + hx * 0.28, by + hy * 0.28);
-    ctx.stroke();
-
-    ctx.strokeStyle = tail;
-    ctx.lineWidth = r * 1.2;
-    ctx.beginPath();
-    ctx.moveTo(bx - tx, by - ty);
-    ctx.lineTo(bx + hx * 0.02, by + hy * 0.02);
-    ctx.stroke();
-
-    ctx.strokeStyle = tip;
-    ctx.lineWidth = r * 0.72;
-    ctx.beginPath();
-    ctx.moveTo(bx - tx * 0.18, by - ty * 0.18);
-    ctx.lineTo(bx + hx * 0.28, by + hy * 0.28);
-    ctx.stroke();
-
-    ctx.fillStyle = tip;
-    ctx.beginPath();
-    ctx.arc(bx + hx * 0.14, by + hy * 0.14, r * 0.52, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#12101c";
-    ctx.lineWidth = 1.1;
-    ctx.stroke();
+    if (b.dead) continue;
+    drawClip(ctx, sheet, "bolt", t, b.x, b.y);
   }
-  ctx.restore();
 }
 
 export function drawGeoms(ctx, geoms, t = 0) {
-  // Small sparkle pickups — deliberately not enemy-shaped (no big diamonds)
-  // Fade/blink when about to expire so players feel the urgency to scoop.
+  const sheet = artBook()?.sheets?.fx;
+  if (!ctx || !sheet || !geoms) return;
   for (const g of geoms) {
-const maxL = g.maxLife > 0 ? g.maxLife : GEOM_LIFE;
+    const maxL = g.maxLife > 0 ? g.maxLife : GEOM_LIFE;
     const lifeFrac = Math.max(0, Math.min(1, g.life / maxL));
-    // Last GEOM_FADE_SEC: drop alpha + blink hard
     let alpha = 1;
     if (g.life < GEOM_FADE_SEC) {
       const u = Math.max(0, g.life / GEOM_FADE_SEC);
@@ -567,541 +432,75 @@ const maxL = g.maxLife > 0 ? g.maxLife : GEOM_LIFE;
       alpha = (0.25 + 0.75 * u) * blink;
     } else if (lifeFrac < 0.45) {
       alpha = 0.55 + 0.45 * ((lifeFrac - 0.2) / 0.25);
-      alpha = Math.max(0.55, Math.min(1, alpha));
     }
-
-    const pulse = 0.85 + 0.15 * Math.sin(t * 10 + g.x * 0.12);
-    const bob = Math.sin(t * 6 + g.y * 0.08) * 1.1;
-    const s = Math.max(3.2, g.r * pulse * (GFX.GEOM_DRAW || 1.45));
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.translate(g.x, hoverY(g.y, bob));
-
-    bloom(ctx, 0, 0, s * 2.8, COLORS.geom, 0.35 * alpha);
-
-    ctx.beginPath();
-    ctx.arc(0, 0, s * 0.7, 0, Math.PI * 2);
-    ctx.fillStyle = COLORS.geom;
-    ctx.fill();
-    ctx.strokeStyle = "#12101c";
-    ctx.lineWidth = 1.6;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(0, 0, s * 0.28, 0, Math.PI * 2);
-    ctx.fillStyle = COLORS.paper || "#fff4dc";
-    ctx.fill();
-
-    ctx.rotate(t * 2.2 + g.x * 0.05);
-    ctx.strokeStyle = colorWithAlpha("#12101c", 0.7);
-    ctx.lineWidth = 1;
-    ctx.lineCap = "round";
-    const arm = s * 1.35;
-    ctx.beginPath();
-    ctx.moveTo(-arm, 0);
-    ctx.lineTo(arm, 0);
-    ctx.moveTo(0, -arm);
-    ctx.lineTo(0, arm);
-    ctx.stroke();
-
-    ctx.restore();
+    drawClip(ctx, sheet, "sunseed", t, g.x, g.y, { alpha });
   }
 }
 
-const INK = "#12101c";
-const PAPER = COLORS.paper || "#fff4dc";
-
-function enemyVisScale(e) {
-  const base = GFX.ENEMY_DRAW || 1.22;
-  if (e.type === "void") return base * (ENEMY.void.drawScale || 1.48);
-  return base;
+function sheetForEnemy(enemy) {
+  const book = artBook();
+  if (!book || !enemy) return null;
+  const id =
+    enemy.pathBoss || enemy.boss ? book.behavior.pathBoss : book.behavior[enemy.type];
+  return book.sheets[id] || null;
 }
 
-function pathSpore(ctx, s) {
-  ctx.beginPath();
-  const n = 8;
-  for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
-    const rr = i % 2 === 0 ? s * 1.18 : s * 0.62;
-    const px = Math.cos(a) * rr;
-    const py = Math.sin(a) * rr;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
+function drawWhip(ctx, enemy, t) {
+  const book = artBook();
+  const segs = snakeSegments(enemy);
+  const segSheet = book.sheets[book.behavior.snakeSegment];
+  const headSheet = book.sheets[book.behavior.snake];
+  for (let i = segs.length - 1; i >= 1; i--) {
+    const here = segs[i];
+    const toward = segs[i - 1];
+    const heading = Math.atan2(toward.y - here.y, toward.x - here.x);
+    drawClip(ctx, segSheet, "idle", t + i * 0.05, here.x, here.y, {
+      angle: heading + Math.PI / 2,
+    });
   }
-  ctx.closePath();
-}
-
-function pathThorn(ctx, s) {
-  ctx.beginPath();
-  ctx.moveTo(s * 1.72, 0);
-  ctx.lineTo(s * 0.18, -s * 0.52);
-  ctx.lineTo(-s * 0.12, -s * 0.2);
-  ctx.lineTo(-s * 1.18, -s * 0.4);
-  ctx.lineTo(-s * 0.42, 0);
-  ctx.lineTo(-s * 1.18, s * 0.4);
-  ctx.lineTo(-s * 0.12, s * 0.2);
-  ctx.lineTo(s * 0.18, s * 0.52);
-  ctx.closePath();
-}
-
-function pathJaw(ctx, s, open) {
-  ctx.beginPath();
-  if (open) {
-    ctx.moveTo(-s * 0.78, -s * 0.22);
-    ctx.lineTo(s * 0.18, -s * 0.12);
-    ctx.lineTo(s * 1.68, -s * 0.88);
-    ctx.lineTo(s * 1.88, -s * 0.22);
-    ctx.lineTo(s * 0.32, s * 0.04);
-    ctx.lineTo(s * 1.62, s * 0.78);
-    ctx.lineTo(s * 1.28, s * 1.08);
-    ctx.lineTo(s * 0.12, s * 0.32);
-    ctx.lineTo(-s * 0.82, s * 0.28);
-  } else {
-    ctx.moveTo(-s * 0.88, -s * 0.38);
-    ctx.lineTo(s * 0.58, -s * 0.58);
-    ctx.lineTo(s * 1.38, -s * 0.12);
-    ctx.lineTo(s * 1.22, s * 0.38);
-    ctx.lineTo(s * 0.38, s * 0.58);
-    ctx.lineTo(-s * 0.82, s * 0.42);
-  }
-  ctx.closePath();
-}
-
-function pathGyro(ctx, s) {
-  ctx.beginPath();
-  for (let i = 0; i < 4; i++) {
-    const a = (i * Math.PI) / 2;
-    const c = Math.cos(a);
-    const sn = Math.sin(a);
-    const tipX = c * s * 1.28;
-    const tipY = sn * s * 1.28;
-    const lx = c * s * 0.16 - sn * s * 0.3;
-    const ly = sn * s * 0.16 + c * s * 0.3;
-    const rx = c * s * 0.16 + sn * s * 0.3;
-    const ry = sn * s * 0.16 - c * s * 0.3;
-    if (i === 0) ctx.moveTo(tipX, tipY);
-    else ctx.lineTo(tipX, tipY);
-    ctx.lineTo(lx, ly);
-    ctx.lineTo(rx, ry);
-  }
-  ctx.closePath();
-}
-
-function pathRift(ctx, s) {
-  ctx.beginPath();
-  ctx.moveTo(0, -s * 1.18);
-  ctx.lineTo(s * 0.88, -s * 0.32);
-  ctx.lineTo(s * 0.98, s * 0.48);
-  ctx.lineTo(s * 0.28, s * 1.12);
-  ctx.lineTo(-s * 0.28, s * 1.12);
-  ctx.lineTo(-s * 0.98, s * 0.48);
-  ctx.lineTo(-s * 0.88, -s * 0.32);
-  ctx.closePath();
-}
-
-function pathMaw(ctx, s) {
-  ctx.beginPath();
-  const n = 9;
-  for (let i = 0; i < n; i++) {
-    const a = -Math.PI / 2 + (i / n) * Math.PI * 2;
-    const rr = i % 2 === 0 ? s * 1.22 : s * 0.7;
-    const px = Math.cos(a) * rr;
-    const py = Math.sin(a) * rr;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  }
-  ctx.closePath();
-}
-
-function pathShard(ctx, s) {
-  ctx.beginPath();
-  ctx.moveTo(0, -s * 1.38);
-  ctx.lineTo(s * 0.72, 0);
-  ctx.lineTo(0, s * 1.22);
-  ctx.lineTo(-s * 0.72, 0);
-  ctx.closePath();
-}
-
-function pathSlab(ctx, s) {
-  ctx.beginPath();
-  ctx.moveTo(-s * 0.98, -s * 0.72);
-  ctx.lineTo(s * 0.88, -s * 1.02);
-  ctx.lineTo(s * 1.18, -s * 0.12);
-  ctx.lineTo(s * 0.98, s * 0.98);
-  ctx.lineTo(-s * 1.08, s * 1.08);
-  ctx.lineTo(-s * 1.22, s * 0.08);
-  ctx.closePath();
-}
-
-function creamSlit(ctx, x, y, w, h = 3.1) {
-  ctx.fillStyle = PAPER;
-  ctx.fillRect(x, y, w, h);
-}
-
-/** Build enemy silhouette path at local origin (caller sets transform). */
-function enemySilhouettePath(ctx, e, t = 0) {
-  const s = e.r;
-  if (e.type === "wanderer") {
-    ctx.rotate(e.spin || 0);
-    pathSpore(ctx, s);
-  } else if (e.type === "diamond") {
-    pathThorn(ctx, s * (1 + 0.04 * Math.sin(t * 10 + (e.spin || 0))));
-  } else if (e.type === "pink") {
-    const coil = e.coiling > 0;
-    pathJaw(ctx, s, e.dashing > 0 || coil);
-  } else if (e.type === "spinner") {
-    ctx.rotate(e.spin || 0);
-    pathGyro(ctx, s);
-  } else if (e.type === "splitter" || e.type === "splitterChild") {
-    ctx.rotate(e.spin || 0);
-    pathRift(ctx, s);
-  } else if (e.type === "void") {
-    ctx.rotate(e.spin || 0);
-    pathMaw(ctx, s);
-  } else if (e.type === "atom") {
-    ctx.rotate(e.spin || 0);
-    pathShard(ctx, s * (1 + 0.08 * Math.sin(t * 12 + (e.spin || 0))));
-  } else if (e.type === "tank") {
-    pathSlab(ctx, s);
-  } else {
-    ctx.beginPath();
-    ctx.arc(0, 0, s, 0, Math.PI * 2);
-  }
-}
-
-/** Sektori-style red wireframe telegraph before enemy solidifies. */
-function drawEnemyOutline(ctx, e, t = 0) {
-  const enter = e.enter != null ? e.enter : 0;
-  const outlineEnd = GFX.ENEMY_OUTLINE_END ?? 0.58;
-  const u = outlineEnd > 0 ? Math.min(1, enter / outlineEnd) : 1;
-  // Faster flash near solidify so the pop is obvious
-  const flashHz = 10 + u * 14;
-  const pulse = 0.5 + 0.5 * Math.sin(t * flashHz + (e.phase || 0));
-  const bob = Math.sin(t * 4.2 + (e.phase || 0)) * 0.6;
-  const scale = 1.05 + pulse * 0.08; // slight size pop so outlines read at a glance
-
-  ctx.save();
-  ctx.translate(e.x, hoverY(e.y, bob));
-  ctx.rotate(e.angle || 0);
-  const vis = scale * enemyVisScale(e);
-  ctx.scale(vis, vis);
-  // Full size silhouette — outline is the threat shape
-  enemySilhouettePath(ctx, e, t);
-
-const a = 0.75 + 0.25 * pulse;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-  if (GFX.FANCY_NEON === false) {
-    // Mobile: one thick danger stroke — still reads as telegraph
-    ctx.strokeStyle = colorWithAlpha(COLORS.danger, a);
-    ctx.lineWidth = 4.2;
-    ctx.stroke();
-    ctx.restore();
-    return;
-  }
-
-  ctx.globalCompositeOperation = "source-over";
-  ctx.strokeStyle = "#12101c";
-  ctx.lineWidth = 7;
-  ctx.stroke();
-  ctx.strokeStyle = colorWithAlpha(COLORS.danger, a);
-  ctx.lineWidth = 3.2;
-  ctx.stroke();
-
-  bloom(ctx, 0, 0, e.r * 3.2, COLORS.danger, 0.42 * pulse);
-  ctx.restore();
+  const head = segs[0];
+  const neck = segs[1] || head;
+  const heading = Math.atan2(head.y - neck.y, head.x - neck.x);
+  drawClip(ctx, headSheet, "idle", t, head.x, head.y, {
+    angle: heading + Math.PI / 2,
+  });
 }
 
 export function drawEnemies(ctx, enemies, t = 0) {
+  if (!ctx || !artBook() || !enemies) return;
   for (const e of enemies) {
-    if (e.dead) continue;
+    if (!e || e.dead) continue;
     if (e.type === "snake") {
-      drawSnake(ctx, e, t);
+      drawWhip(ctx, e, t);
       continue;
     }
-
-    const enter = e.enter != null ? e.enter : 1;
-    const outlineEnd = GFX.ENEMY_OUTLINE_END ?? 0.38;
-
-    // Phase A: red outline only (Sektori telegraph)
-    if (enter < outlineEnd) {
-      drawEnemyOutline(ctx, e, t);
-      continue;
-    }
-
-    // Phase B: solidify — scale from ~0.85→1 and fade fill in
-    const solidU = Math.min(1, (enter - outlineEnd) / Math.max(0.001, 1 - outlineEnd));
-    const scale = 0.85 + 0.15 * solidU;
-    const bob = Math.sin(t * 4.2 + e.phase) * 1.4 * solidU;
-
-    ctx.save();
-    ctx.translate(e.x, hoverY(e.y, bob));
-    ctx.rotate(e.angle);
-    const vis = scale * enemyVisScale(e);
-    ctx.scale(vis, vis);
-    ctx.globalAlpha = 0.55 + 0.45 * solidU;
-
-    bloom(ctx, 0, 0, e.r * 2.2, e.color, 0.22 * solidU);
-
-    const hpFrac = e.hp / e.maxHp;
-    const s = e.r;
-
-    if (e.type === "wanderer") {
-      ctx.rotate(e.spin || 0);
-      pathSpore(ctx, s);
-      neonFillStroke(ctx, colorWithAlpha(e.color, 0.9), e.color, 2.1);
-      ctx.beginPath();
-      ctx.arc(0, 0, s * 0.28, 0, Math.PI * 2);
-      ctx.fillStyle = INK;
-      ctx.fill();
-    } else if (e.type === "diamond") {
-      const ts = s * (1 + 0.04 * Math.sin(t * 10 + (e.spin || 0)));
-      pathThorn(ctx, ts);
-      neonFillStroke(ctx, INK, e.color, 2.3);
-      ctx.beginPath();
-      ctx.moveTo(ts * 0.22, 0);
-      ctx.lineTo(ts * 1.22, 0);
-      ctx.lineTo(ts * 0.28, -ts * 0.22);
-      ctx.closePath();
-      ctx.fillStyle = colorWithAlpha(e.color, 0.95);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(ts * 0.22, 0);
-      ctx.lineTo(ts * 1.22, 0);
-      ctx.lineTo(ts * 0.28, ts * 0.22);
-      ctx.closePath();
-      ctx.fillStyle = colorWithAlpha("#2fd39a", 0.85);
-      ctx.fill();
-      creamSlit(ctx, ts * 0.32, -1.6, ts * 0.22, 3.1);
-    } else if (e.type === "pink") {
-      const open = e.dashing > 0 || e.coiling > 0;
-      pathJaw(ctx, s, open);
-      neonFillStroke(ctx, INK, e.color, 2.3);
-      ctx.beginPath();
-      if (open) {
-        ctx.moveTo(-s * 0.42, -s * 0.08);
-        ctx.lineTo(s * 0.18, -s * 0.02);
-        ctx.lineTo(s * 0.12, s * 0.18);
-        ctx.lineTo(-s * 0.42, s * 0.16);
-      } else {
-        ctx.moveTo(-s * 0.48, -s * 0.16);
-        ctx.lineTo(s * 0.42, -s * 0.18);
-        ctx.lineTo(s * 0.36, s * 0.16);
-        ctx.lineTo(-s * 0.42, s * 0.18);
-      }
-      ctx.closePath();
-      neonFillStroke(ctx, colorWithAlpha(e.color, open ? 0.95 : 0.88), e.color, 1.6);
-      creamSlit(ctx, -s * 0.12, -s * 0.06, s * 0.26, 3.1);
-      if (e.dashing > 0) bloom(ctx, s * 0.8, 0, s * 2.4, e.color, 0.4);
-    } else if (e.type === "spinner") {
-      ctx.rotate(e.spin || 0);
-      pathGyro(ctx, s);
-      neonFillStroke(ctx, INK, e.color, 2.1);
-      ctx.beginPath();
-      ctx.arc(0, 0, s * 0.42, 0, Math.PI * 2);
-      neonFillStroke(ctx, "#6e568c", e.color, 1.8);
-      ctx.strokeStyle = PAPER;
-      ctx.lineWidth = 2.1;
-      ctx.lineCap = "square";
-      ctx.beginPath();
-      ctx.moveTo(-s * 0.16, -s * 0.04);
-      ctx.lineTo(s * 0.16, -s * 0.04);
-      ctx.moveTo(-s * 0.08, s * 0.1);
-      ctx.lineTo(s * 0.1, s * 0.1);
-      ctx.stroke();
-    } else if (e.type === "splitter" || e.type === "splitterChild") {
-      ctx.rotate(e.spin || 0);
-      pathRift(ctx, s);
-      neonFillStroke(ctx, INK, e.color, e.type === "splitter" ? 2.4 : 1.8);
-      ctx.beginPath();
-      ctx.moveTo(0, -s * 0.78);
-      ctx.lineTo(s * 0.42, -s * 0.12);
-      ctx.lineTo(s * 0.46, s * 0.28);
-      ctx.lineTo(s * 0.12, s * 0.72);
-      ctx.lineTo(-s * 0.12, s * 0.72);
-      ctx.lineTo(-s * 0.46, s * 0.28);
-      ctx.lineTo(-s * 0.42, -s * 0.12);
-      ctx.closePath();
-      neonFillStroke(ctx, colorWithAlpha(e.color, 0.9), e.color, 1.5);
-      if (e.type === "splitter") {
-        ctx.beginPath();
-        ctx.moveTo(0, -s * 0.82);
-        ctx.lineTo(s * 0.08, -s * 0.12);
-        ctx.lineTo(-s * 0.06, s * 0.22);
-        ctx.lineTo(s * 0.12, s * 0.78);
-        ctx.strokeStyle = PAPER;
-        ctx.lineWidth = 2.4;
-        ctx.stroke();
-        creamSlit(ctx, -s * 0.22, -s * 0.08, s * 0.16, 2.6);
-        creamSlit(ctx, s * 0.08, s * 0.18, s * 0.14, 2.4);
-      } else {
-        creamSlit(ctx, -s * 0.1, -s * 0.06, s * 0.18, 2.4);
-      }
-    } else if (e.type === "void") {
-      bloom(ctx, 0, 0, s * 3.4, e.color, 0.42);
-      ctx.rotate(e.spin || 0);
-      pathMaw(ctx, s);
-      neonFillStroke(ctx, INK, e.color, 2.6);
-      ctx.beginPath();
-      ctx.ellipse(0, s * 0.04, s * 0.42, s * 0.32, 0, 0, Math.PI * 2);
-      ctx.fillStyle = "#07060d";
-      ctx.fill();
-      ctx.strokeStyle = colorWithAlpha(COLORS.atom, 0.7);
-      ctx.lineWidth = 1.8;
-      ctx.stroke();
-      ctx.strokeStyle = PAPER;
-      ctx.lineWidth = 1.8;
-      ctx.lineCap = "square";
-      ctx.beginPath();
-      ctx.moveTo(-s * 0.18, -s * 0.06);
-      ctx.lineTo(-s * 0.08, s * 0.16);
-      ctx.lineTo(0, -s * 0.02);
-      ctx.moveTo(s * 0.08, -s * 0.1);
-      ctx.lineTo(s * 0.16, s * 0.14);
-      ctx.lineTo(s * 0.26, -s * 0.04);
-      ctx.stroke();
-      creamSlit(ctx, -s * 0.48, -s * 0.28, s * 0.22, 3);
-      if (e.hp < e.maxHp) {
-        ctx.beginPath();
-        ctx.arc(0, 0, s * 0.78, 0, Math.PI * 2 * hpFrac);
-        ctx.strokeStyle = PAPER;
-        ctx.lineWidth = 2.2;
-        ctx.stroke();
-      }
-    } else if (e.type === "atom") {
-      const ss = s * (1 + 0.08 * Math.sin(t * 12 + (e.spin || 0)));
-      ctx.rotate(e.spin || 0);
-      pathShard(ctx, ss);
-      neonFillStroke(ctx, INK, e.color, 1.8);
-      ctx.beginPath();
-      ctx.moveTo(0, -ss * 0.72);
-      ctx.lineTo(ss * 0.36, 0);
-      ctx.lineTo(0, ss * 0.62);
-      ctx.lineTo(-ss * 0.36, 0);
-      ctx.closePath();
-      neonFillStroke(ctx, colorWithAlpha(e.color, 0.9), e.color, 1.3);
-      creamSlit(ctx, -ss * 0.12, -ss * 0.08, ss * 0.22, 2.2);
-    } else if (e.type === "tank") {
-      pathSlab(ctx, s);
-      neonFillStroke(ctx, INK, e.color, 2.6);
-      ctx.beginPath();
-      ctx.moveTo(-s * 0.58, -s * 0.42);
-      ctx.lineTo(s * 0.52, -s * 0.62);
-      ctx.lineTo(s * 0.68, -s * 0.06);
-      ctx.lineTo(s * 0.52, s * 0.58);
-      ctx.lineTo(-s * 0.62, s * 0.64);
-      ctx.lineTo(-s * 0.72, s * 0.04);
-      ctx.closePath();
-      neonFillStroke(ctx, colorWithAlpha(e.color, 0.78 + 0.18 * hpFrac), e.color, 1.8);
-      ctx.fillStyle = INK;
-      ctx.beginPath();
-      ctx.moveTo(-s * 0.42, -s * 0.18);
-      ctx.lineTo(s * 0.48, -s * 0.32);
-      ctx.lineTo(s * 0.5, s * 0.06);
-      ctx.lineTo(-s * 0.36, s * 0.12);
-      ctx.closePath();
-      ctx.fill();
-      creamSlit(ctx, -s * 0.08, -s * 0.2, s * 0.36, 3.4);
-      ctx.beginPath();
-      ctx.moveTo(s * 0.12, s * 0.28);
-      ctx.lineTo(s * 0.82, s * 0.42);
-      ctx.lineTo(s * 0.62, s * 0.68);
-      ctx.lineTo(s * 0.02, s * 0.48);
-      ctx.closePath();
-      ctx.fillStyle = INK;
-      ctx.fill();
-      if (e.hp < e.maxHp) {
-        ctx.beginPath();
-        ctx.arc(0, 0, s * 0.42, 0, Math.PI * 2 * hpFrac);
-        ctx.strokeStyle = PAPER;
-        ctx.lineWidth = 2.2;
-        ctx.stroke();
-      }
-    }
-
-    ctx.restore();
+    const sheet = sheetForEnemy(e);
+    if (!sheet) continue;
+    drawClip(ctx, sheet, "idle", t + (e.phase || 0), e.x, e.y);
   }
 }
 
-function drawSnake(ctx, e, t) {
-  const segs = snakeSegments(e);
-  const enter = e.enter != null ? e.enter : 1;
-  const outlineEnd = GFX.ENEMY_OUTLINE_END ?? 0.38;
-  const lift = (s, i) => hoverY(s.y, Math.sin(t * 5 + i) * 0.8);
-  const heading = (i) => {
-    const a = segs[i];
-    const b = segs[i + 1] || segs[i - 1] || a;
-    return Math.atan2(a.y - b.y, a.x - b.x);
-  };
-
-  const strokeSpine = (color, width, cap = "square") => {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width;
-    ctx.lineJoin = "miter";
-    ctx.lineCap = cap;
-    ctx.beginPath();
-    for (let i = 0; i < segs.length; i++) {
-      const hy = lift(segs[i], i);
-      if (i === 0) ctx.moveTo(segs[i].x, hy);
-      else ctx.lineTo(segs[i].x, hy);
-    }
-    ctx.stroke();
-  };
-
-  if (enter < outlineEnd) {
-    const pulse = 0.55 + 0.45 * Math.sin(t * 16 + (e.phase || 0));
-    const a = 0.5 + 0.4 * pulse;
-    ctx.save();
-    ctx.globalCompositeOperation = "source-over";
-    strokeSpine(colorWithAlpha(INK, a * 0.7), 16);
-    strokeSpine(colorWithAlpha(COLORS.danger, a), 6);
-    const head = segs[0];
-    ctx.translate(head.x, lift(head, 0));
-    ctx.rotate(e.angle || heading(0));
-    ctx.beginPath();
-    ctx.moveTo(e.r * 1.6, 0);
-    ctx.lineTo(-e.r * 0.35, e.r * 0.85);
-    ctx.lineTo(-e.r * 0.15, 0);
-    ctx.lineTo(-e.r * 0.35, -e.r * 0.85);
-    ctx.closePath();
-    ctx.strokeStyle = colorWithAlpha(COLORS.danger, a);
-    ctx.lineWidth = 2.4;
-    ctx.stroke();
-    ctx.restore();
-    return;
+export function drawArtFx(ctx, list, t = 0) {
+  const sheet = artBook()?.sheets?.fx;
+  if (!ctx || !sheet || !list) return;
+  for (const fx of list) {
+    drawClip(ctx, sheet, fx.kind, fx.age != null ? fx.age : t, fx.x, fx.y);
   }
-
-  const solidU = Math.min(1, (enter - outlineEnd) / Math.max(0.001, 1 - outlineEnd));
-  ctx.save();
-  ctx.globalCompositeOperation = "source-over";
-  ctx.globalAlpha = 0.55 + 0.45 * solidU;
-  strokeSpine(INK, 18);
-  strokeSpine(e.color, 10);
-  strokeSpine(colorWithAlpha(PAPER, 0.22 * solidU), 3);
-  ctx.restore();
-
-  const head = segs[0];
-  ctx.save();
-  ctx.globalAlpha = 0.55 + 0.45 * solidU;
-  ctx.translate(head.x, lift(head, 0));
-  ctx.rotate(e.angle || heading(0));
-  bloom(ctx, 0, 0, e.r * 2.2, e.color, 0.28);
-  ctx.beginPath();
-  ctx.moveTo(e.r * 1.7, 0);
-  ctx.lineTo(-e.r * 0.4, e.r * 0.9);
-  ctx.lineTo(-e.r * 0.1, 0);
-  ctx.lineTo(-e.r * 0.4, -e.r * 0.9);
-  ctx.closePath();
-  neonFillStroke(ctx, INK, e.color, 2.2);
-  ctx.beginPath();
-  ctx.moveTo(e.r * 1.05, 0);
-  ctx.lineTo(-e.r * 0.05, e.r * 0.42);
-  ctx.lineTo(e.r * 0.08, 0);
-  ctx.lineTo(-e.r * 0.05, -e.r * 0.42);
-  ctx.closePath();
-  neonFillStroke(ctx, colorWithAlpha(e.color, 0.92), e.color, 1.4);
-  creamSlit(ctx, e.r * 0.28, -1.6, e.r * 0.32, 3);
-  ctx.restore();
 }
+
+export function drawHudIcons(ctx, lives, bombs) {
+  const book = artBook();
+  const sheet = book?.sheets?.fx;
+  if (!ctx || !sheet) return;
+  const worldW = book.world?.w || 1600;
+  const nL = Math.max(0, lives | 0);
+  const nB = Math.max(0, bombs | 0);
+  for (let i = 0; i < nL; i++) drawFrame(ctx, sheet, "hud", 0, 36 + i * 22, 36);
+  for (let i = 0; i < nB; i++) {
+    drawFrame(ctx, sheet, "hud", 1, worldW - 36 - i * 22, 36);
+  }
+}
+
 
 export function drawBombFlash(ctx, flash) {
   if (!flash || flash <= 0) return;

@@ -275,23 +275,11 @@ export function cameraShakeOffset(cam) {
   return { x, y, rot };
 }
 
-/**
- * Apply camera transform for world-space drawing.
- * @param {CanvasRenderingContext2D} ctx
- * @param {object} cam
- * @param {number} [dpr=1] device pixel ratio — scales into the backing buffer
- */
-export function applyCameraTransform(ctx, cam, dpr = 1, worldW = WORLD_W, worldH = WORLD_H) {
-  const shake = cameraShakeOffset(cam);
-  const z = cam.zoom;
-  const w = worldW ?? cam.worldW ?? WORLD_W;
-  const h = worldH ?? cam.worldH ?? WORLD_H;
-  // Device-pixel center → world cam, with shake/rotation
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.translate((w * dpr) / 2, (h * dpr) / 2);
-  if (shake.rot) ctx.rotate(shake.rot);
-  ctx.scale(z * dpr, z * dpr);
-  ctx.translate(-cam.x + shake.x, -cam.y + shake.y);
+/** Frame the full world. Device pixel scale stays an integer so atlas pixels stay square. */
+export function applyCameraTransform(ctx, _cam, dpr = 1) {
+  const d = Number.isInteger(dpr) && dpr >= 1 ? dpr : 1;
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  ctx.imageSmoothingEnabled = false;
 }
 
 /** Menu idle: gentle drift / breathing zoom */

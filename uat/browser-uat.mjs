@@ -6,13 +6,22 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
 const BASE = process.env.UAT_URL || "http://localhost:5173";
-const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const CHROME =
+  process.env.CHROME_PATH ||
+  [
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/usr/bin/google-chrome",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+  ].find((p) => fs.existsSync(p));
 
 const require = createRequire(import.meta.url);
 
@@ -72,8 +81,8 @@ async function main() {
     const overlayHidden = await page.$eval("#overlay", (el) => el.classList.contains("hidden"));
     log(!overlayHidden, "Menu overlay visible on boot");
 
-    const title = await page.$eval("#overlay-title", (el) => el.textContent.trim());
-    log(title === "Geometry Arena", "Title is Geometry Arena", title);
+    const title = await page.title();
+    log(title === "Ryan and the Siege of Fernhollow", "Title is Fernhollow", title);
 
     // HUD defaults
     const score = await page.$eval("#score", (el) => el.textContent);
@@ -131,7 +140,7 @@ async function main() {
     log(pausedVisible && pauseTitle === "Paused", "P pauses game", pauseTitle);
 
     // Resume
-    await page.click("#resume-btn");
+    await page.click("#interrupt-btn");
     await page.waitForFunction(() => document.getElementById("overlay").classList.contains("hidden"));
     log(true, "Resume continues game");
 
