@@ -1,4 +1,4 @@
-# Geometry Arena — Deep Research: Fine-Tuning Gameplay
+# Fernhollow — Deep Research: Fine-Tuning Gameplay
 
 Research synthesis for tuning a Geometry Wars–style twin-stick arena shooter.  
 Mapped to **this codebase’s knobs** and what playtesting already revealed.

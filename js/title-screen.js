@@ -18,7 +18,9 @@ export function mountTitleScreen(canvas) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     if (img) ctx.drawImage(img, 0, 0);
     const t = ((now || 0) - t0) / 1000;
-    const blink = Math.floor(t * 2) % 2 === 0;
+    const blink =
+      window.__holdPrompt ||
+      (window.__showPressStart !== false && Math.floor(t * 2) % 2 === 0);
     if (blink) {
       const label = "PRESS START";
       const scale = 3;

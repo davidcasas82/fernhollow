@@ -144,6 +144,39 @@ export function parseAtlas(atlas, walls) {
   files.push({ file: courtyard.file, w: courtyard.w, h: courtyard.h });
   files.push({ file: title.named_file, w: title.w, h: title.h });
 
+  const ui = atlas.v3_extras?.ui;
+  const uiNames = [
+    "panel-corner",
+    "panel-edge-h",
+    "panel-edge-v",
+    "panel-fill",
+    "banner",
+    "bar-back",
+    "bar-heart",
+    "bar-sun",
+    "cursor",
+    "button",
+  ];
+  if (!ui?.file || ui.w !== 460 || ui.h !== 32 || !ui.cells) {
+    throw new Error("atlas is missing the 460x32 ui-frames sheet");
+  }
+  const uiCells = {};
+  for (const name of uiNames) {
+    const cell = ui.cells[name];
+    if (!cell || !Number.isInteger(cell.w) || !Number.isInteger(cell.h)) {
+      throw new Error(`ui-frames is missing ${name}`);
+    }
+    uiCells[name] = {
+      sx: cell.x,
+      sy: cell.y,
+      sw: cell.w,
+      sh: cell.h,
+      hotspot: cell.hotspot || null,
+    };
+  }
+  if (ui.draw_scale !== 2) throw new Error("ui-frames draw_scale must be 2");
+  files.push({ file: ui.file, w: ui.w, h: ui.h });
+
   return {
     world: { w: atlas.world?.w || courtyard.w, h: atlas.world?.h || courtyard.h },
     floor: { x: floor.x, y: floor.y, w: floor.w, h: floor.h },
@@ -152,6 +185,8 @@ export function parseAtlas(atlas, walls) {
     files,
     courtyardFile: courtyard.file,
     titleFile: title.named_file,
+    uiFile: ui.file,
+    uiCells,
   };
 }
 
@@ -182,6 +217,9 @@ export function bindArt(defs, images) {
     behavior: defs.behavior,
     courtyard: images[defs.courtyardFile],
     titleNamed: images[defs.titleFile],
+    ui: defs.uiFile
+      ? { image: images[defs.uiFile], cells: defs.uiCells, scale: 2 }
+      : null,
   });
 }
 

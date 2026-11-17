@@ -1,9 +1,9 @@
-# Geometry Arena — Build Context
+# Fernhollow — Build Context
 
 **Purpose:** handoff doc so a new session (human or agent) can resume development without re-discovering architecture, product decisions, and past failure modes.
 
 **Last updated:** 2026-08-18 (Path win contracts, 3-phase boss, Classic teach + verb morph)  
-**Project root:** `geometry-arena/` (under `My Dev Folder`)  
+**Project root:** this repository.
 **Stack:** vanilla HTML / CSS / ES modules, Canvas 2D, Web Audio SFX + HTMLAudio BGM, `localStorage` only (no backend)
 
 ---
@@ -26,7 +26,7 @@ A **Geometry Wars–inspired twin-stick shooter** for laptop play:
 
 **Death / economy:** extra lives escalate (`EXTRA_LIFE_EVERY` × `EXTRA_LIFE_SCALE^n`). Death keeps a mult recovery seed (`DEATH_MULT_KEEP`, capped) + board cull — not hard ×1. Respawn freezes control (`RESPAWN_FREEZE_MS`) then remaining invuln with sticks live.
 
-**Vibe:** neon arena, reactive grid, geom mult economy, formation spawns, trauma camera, hover-shadow geoms/enemies, SNES-title-inspired splash + chrome logo.
+**Vibe:** Fernhollow courtyard, parchment panels, pixel font, Sunseed multiplier, formation spawns. Kid-friendly.
 
 Honest parity notes vs Geometry Wars: `docs/VS_GEOMETRY_WARS.md`  
 Tuning research / goldilocks goals: `docs/GAMEPLAY_TUNING_RESEARCH.md`  
@@ -37,9 +37,7 @@ Tuning research / goldilocks goals: `docs/GAMEPLAY_TUNING_RESEARCH.md`
 ## How to run
 
 ```bash
-cd "geometry-arena"
-npm start          # static server on :5173
-# open http://localhost:5173
+npm start
 ```
 
 Scripts:
@@ -57,7 +55,7 @@ ES modules require a static server (`file://` will fail).
 ### Debug hooks (browser console)
 
 ```js
-__geometryArena          // Game instance
+__fernhollow             // Game instance
 __arenaRuns()            // dump run history
 __arenaRecent()          // last 10 runs
 __arenaDeaths()          // last 20 deaths (includes `cause`)
@@ -72,7 +70,7 @@ Death telemetry logs: `[arena:death]` in the console. Each event includes `cause
 ## File map
 
 ```
-geometry-arena/
+fernhollow/
   index.html          # splash + app shell + title menu + interrupt panel
   styles.css          # layout, HUD, splash, title menu, arcade buttons
   package.json
@@ -153,19 +151,16 @@ Core loop in `Game._loop` (`js/game.js`): update only while `playing`; menu stil
 
 ### 1. Full-screen splash (`#splash`)
 
-- Black void, 16-bit / SNES title energy (Battletoads Double Dragon inspired)
-- Large chrome **GEOMETRY / ARENA** wordmark (CSS, not generated image — text accuracy)
-- Floating geometric props, starfield, scanlines
-- **Any key or click** dismisses → fades/zooms out
+- Painted title art (`title-bg-named.png`) plus PRESS START in the pixel font
+- The name is **Ryan and the Siege of Fernhollow**
+- **Any key or click** dismisses into the parchment menu
 
 ### 2. Title menu on live grid (`#title-menu`, overlay `mode-title`)
 
-- Same chrome logo (smaller) + tagline
-- **PLAY** arcade button (Enter / Space also start)
+- Parchment panel on the title art. Pixel font. Menu cursor is `>` until the cursor frame exists
+- **COURTYARD** starts a run (Enter / Space too)
+- **STAGES**, **OPTIONS**, **BLESSINGS**, **HOW TO PLAY**, **CREDITS**
 - BEST score
-- **HOW TO PLAY** expands control/tips list
-- No control chips, no yellow coach box (removed by design)
-- Light vignette only — **see the arena** through the menu (not a SaaS modal)
 
 ### 3. Interrupt panel (`#interrupt-panel`, overlay `mode-panel`)
 
@@ -173,15 +168,15 @@ Core loop in `Game._loop` (`js/game.js`): update only while `playing`; menu stil
 
 ### 3b. Game over (`#gameover-menu`, overlay `mode-gameover`)
 
-- **No boilerplate box** — chrome **GAME / OVER** wordmark on the live grid (same logo language as title/splash)
+- Parchment panel. Pixel-font **Game Over**. The courtyard grows quiet
 - Stat chips: Score · Peak × · Time · Best
 - **PLAY AGAIN** + **TITLE** integrated under the mark (`showGameOver` in `main.js`)
 - Optional recent-runs text; restart still via `R` / gamepad A-Start
 
 ### 4. Header HUD
 
-- Top-left: compact chrome **GEOMETRY / ARENA** logo (not generic text / not old brand-mark ship box)
-- Stats: Score, Level, Mult (label = Needle/Dual/Triple), Lives + bomb **meters** (base progress), Best
+- Top bar: pixel-font **Ryan and the Siege of Fernhollow**, parchment stat chips, heart and Sunseed bars
+- Stats: Score, Wave, Sun (Sun / Twin / Triple) with a Sunseed bar, Hearts with a heart bar, Bursts, Best
 
 **UI logic lives in `js/main.js`:** `showTitleMenu()`, `showOverlay()` (interrupts), splash dismiss. Do not reintroduce a frosted “Play + how-to wall” as the default first screen.
 
@@ -255,7 +250,7 @@ These were discussed or are natural next steps — pick when product asks:
 - [x] Iris / scanline wipe transition (splash `clip-path` + scan wipe)  
 - [ ] Further goldilocks passes from run history (`__arenaRuns`)  
 - [x] Gamepad support (Bluetooth/USB via Gamepad API; deadzone in constants)  
-- [x] Deployable static host (GitHub Pages → https://davidcasas82.github.io/geometry-arena/)  
+- [x] Deployable static host (Pages from the repository root)
 - [x] Sync README milestone numbers with `constants.js`  
 - [x] Pause help deep-link to same how-to content  
 
@@ -268,7 +263,7 @@ These were discussed or are natural next steps — pick when product asks:
 3. `npm start` → hard-refresh browser.  
 4. Walk: splash → title → play 30s → pause → die once → game over.  
 5. If touching combat/lives: `npm run uat:adversarial` (or full `npm run uat`).  
-6. Keep UI language consistent with chrome logo + live-grid title menu.  
+6. Keep UI language on the kingdom parchment panels, pixel font, and the title **Ryan and the Siege of Fernhollow**.
 7. Prefer small, focused diffs; balance via constants first.
 
 ---

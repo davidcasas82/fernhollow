@@ -1,5 +1,5 @@
 /**
- * Geometry Arena — Arena Path catalog + pure helpers.
+ * Fernhollow — stage catalog and pure helpers.
  * Design lock: docs/LEVELS_DESIGN.md
  *
  * Classic Evolved does not import this for the default PLAY loop.
@@ -777,7 +777,7 @@ export function topologyLabel(id) {
     case "split":
       return "SPLIT";
     default:
-      return String(id || "ARENA").toUpperCase();
+      return String(id || "YARD").toUpperCase();
   }
 }
 

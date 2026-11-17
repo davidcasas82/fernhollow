@@ -1,5 +1,5 @@
 /**
- * Browser UAT for Geometry Arena via Puppeteer + system Chrome.
+ * Browser UAT for Fernhollow via Puppeteer.
  * Run: node uat/browser-uat.mjs
  */
 
@@ -49,7 +49,7 @@ function log(ok, name, detail = "") {
 }
 
 async function main() {
-  console.log("\n=== Geometry Arena UAT (browser) ===");
+  console.log("\n=== Fernhollow UAT (browser) ===");
   console.log(`URL: ${BASE}\n`);
 
   const puppeteer = await loadPuppeteer();
@@ -76,6 +76,36 @@ async function main() {
     await page.waitForSelector("#game");
     await page.waitForSelector("#start-btn");
     log(true, "Canvas and Play button present");
+
+    await page.waitForFunction(() => window.__fernhollow?.audio);
+    const titleBefore = await page.evaluate(
+      () => window.__fernhollow.audio.chiptune.currentId
+    );
+    log(titleBefore == null, "Title music waits for a gesture", String(titleBefore));
+
+    await page.keyboard.press("KeyA");
+    await page.waitForFunction(
+      () => window.__fernhollow.audio.chiptune.currentId === "title"
+    );
+    const stillMenu = await page.evaluate(() => window.__fernhollow.state === "menu");
+    log(stillMenu, "First key starts the title track");
+
+    await page.goto(BASE, { waitUntil: "networkidle0" });
+    await page.waitForFunction(() => window.__fernhollow?.audio);
+    await page.mouse.click(160, 280);
+    await page.waitForFunction(
+      () => window.__fernhollow.audio.chiptune.currentId === "title"
+    );
+    log(true, "First click starts the title track");
+
+    await page.setViewport({ width: 1400, height: 900, hasTouch: true });
+    await page.goto(BASE, { waitUntil: "networkidle0" });
+    await page.waitForFunction(() => window.__fernhollow?.audio);
+    await page.touchscreen.tap(160, 280);
+    await page.waitForFunction(
+      () => window.__fernhollow.audio.chiptune.currentId === "title"
+    );
+    log(true, "First tap starts the title track");
 
     // Title overlay visible
     const overlayHidden = await page.$eval("#overlay", (el) => el.classList.contains("hidden"));
@@ -159,7 +189,7 @@ async function main() {
     // Patch: evaluate start and reduce lives by reloading... skip forced GO if no hook.
 
     // High score key exists or not
-    const hs = await page.evaluate(() => localStorage.getItem("geometry-arena-highscore"));
+    const hs = await page.evaluate(() => localStorage.getItem("fernhollow-best"));
     log(true, "localStorage highscore key readable", hs === null ? "(empty)" : hs);
 
     // Canvas pixels not all black (something rendered)
@@ -196,14 +226,14 @@ async function main() {
       log(code === 200 || code === 304, `Asset ${asset}`, String(code));
     }
 
-    // --- Deep state UAT via window.__geometryArena ---
+    // --- Deep state UAT via window.__fernhollow ---
     await page.goto(BASE, { waitUntil: "networkidle0" });
     await page.waitForSelector("#start-btn");
     await page.click("#start-btn");
-    await page.waitForFunction(() => window.__geometryArena?.state === "playing");
+    await page.waitForFunction(() => window.__fernhollow?.state === "playing");
 
     const deep = await page.evaluate(async () => {
-      const g = window.__geometryArena;
+      const g = window.__fernhollow;
       const out = { steps: [] };
 
       const step = (name, ok, detail) => out.steps.push({ name, ok, detail });
@@ -340,7 +370,7 @@ async function main() {
       step("game over at 0 lives", g.state === "gameover", g.state);
 
       // High score persisted
-      const hs = localStorage.getItem("geometry-arena-highscore");
+      const hs = localStorage.getItem("fernhollow-best");
       step("high score written on game over", hs != null, hs);
 
       // Restart

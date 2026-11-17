@@ -1,5 +1,5 @@
 /**
- * Geometry Arena — Arena Path progress (localStorage).
+ * Fernhollow stage progress (localStorage).
  * Mirrors js/runs.js persistence style.
  * Contract: docs/LEVELS_DESIGN.md
  */
@@ -14,7 +14,7 @@ import {
   maxPathStars,
 } from "./levels.js";
 
-export const PROGRESS_KEY = "geometry-arena-path-progress";
+export const PROGRESS_KEY = "fernhollow-path";
 export const PROGRESS_VERSION = 3;
 
 /**

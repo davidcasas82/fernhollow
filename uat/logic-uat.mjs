@@ -1,5 +1,5 @@
 /**
- * Headless logic UAT for Geometry Arena (no browser).
+ * Headless logic UAT for Fernhollow (no browser).
  * Run: node uat/logic-uat.mjs
  */
 
@@ -101,7 +101,7 @@ const {
 const { circlesOverlap, clampToWorld } = await import(js("physics.js"));
 const { ParticleSystem } = await import(js("particles.js"));
 
-console.log("\n=== Geometry Arena UAT (logic) ===\n");
+console.log("\n=== Fernhollow UAT (logic) ===\n");
 
 // --- Movement / diagonals ---
 test("W alone moves up (negative Y)", () => {

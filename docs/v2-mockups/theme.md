@@ -1,8 +1,6 @@
 # Ryan and the Siege of Fernhollow
 
-Draft for David to edit. Nothing in this file is locked.
-
-This is a look-and-theme mockup only. The original Geometry Arena stays as it is. v2 would be a separate, private, family-only game. No audio has been made yet.
+This is the public game's theme. Stay true to the approved sprite. Nothing else in this file is locked. Kid-friendly: brave and fun, never scary. No audio has been made yet.
 
 ## Title
 
@@ -23,7 +21,7 @@ While the knights of Fernhollow were away in the far meadows, a band of mischiev
 
 ## How the game still plays
 
-Same twin-stick arena shooter as Geometry Arena, with a new coat of paint:
+Same twin-stick courtyard shooter, with the kingdom coat of paint:
 
 - Ryan stands in the courtyard, moves, aims, and fires magic bolts.
 - Enemies come in waves. Density ramps over a run, with bursts and lulls.

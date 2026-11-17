@@ -1,5 +1,5 @@
 /**
- * Capture itch.io stills (cover + screenshots) from a local Geometry Arena build.
+ * Capture itch stills from this Fernhollow build.
  * Run: npm start  (in another terminal, if needed)
  *      node uat/capture-itch-shots.mjs
  *
@@ -74,7 +74,7 @@ async function shot(page, name, opts = {}) {
 }
 
 async function dressSwarm() {
-  const g = window.__geometryArena;
+  const g = window.__fernhollow;
   const { spawnEnemy, createGeom } = await import("/js/entities.js");
   g.start({ skipBgm: true });
   if (g.audio?.enabled !== false) g.toggleMute?.();
@@ -200,7 +200,7 @@ async function main() {
     await shot(page, "04-classic-swarm.png");
 
     await page.evaluate(() => {
-      const g = window.__geometryArena;
+      const g = window.__fernhollow;
       g._detonateBomb?.();
     });
     await new Promise((r) => setTimeout(r, 90));
