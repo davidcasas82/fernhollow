@@ -1,9 +1,9 @@
 {
-  "name": "fernhollow",
+  "name": "geometry-arena",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Ryan and the Siege of Fernhollow — a kid-friendly twin-stick courtyard shooter.",
+  "description": "A Geometry Wars–inspired twin-stick shooter for the browser.",
   "scripts": {
     "dev": "npx --yes serve -l 5173",
     "start": "npx --yes serve -l 5173",
@@ -12,7 +12,6 @@
     "uat:logic": "node uat/logic-uat.mjs",
     "uat:adversarial": "node uat/adversarial-uat.mjs",
     "uat:browser": "node uat/browser-uat.mjs",
-    "itch-shots": "node uat/capture-itch-shots.mjs",
-    "smoke:frames": "node uat/smoke-frames.mjs"
+    "itch-shots": "node uat/capture-itch-shots.mjs"
   }
 }

@@ -1,6 +1,4 @@
-# Ryan and the Siege of Fernhollow — systems vs Geometry Wars
-
-> The public game is Fernhollow. This note scores the unchanged twin-stick systems against Geometry Wars. It is not the art direction.
+# Geometry Arena vs Geometry Wars — parity assessment
 
 Scored against **Geometry Wars: Retro Evolved / RE2 Evolved** as the bar.  
 **10** = matches the real game’s feel. **UAT green ≠ parity.**

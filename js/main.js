@@ -1,6 +1,4 @@
 import { Game } from "./game.js";
-import { mountTitleScreen } from "./title-screen.js";
-import { SPR, uiURL } from "./sprites.js";
 import {
   applyGfxQuality,
   GFX,
@@ -344,7 +342,7 @@ function refreshTitleStars() {
 function setPathHudVisible(on) {
   pathObjStat?.classList.toggle("hidden", !on);
   if (!on && pathObjectiveEl) pathObjectiveEl.textContent = "—";
-  if (!on && levelLabelEl) levelLabelEl.textContent = "Wave";
+  if (!on && levelLabelEl) levelLabelEl.textContent = "Level";
   document.body.classList.toggle("path-run", !!on);
 }
 
@@ -806,8 +804,8 @@ const ui = {
     if (!gunLabelEl) return;
     const m = Math.floor(n || 1);
     if (m >= MULT_FOR_TRIPLE) gunLabelEl.textContent = "Triple";
-    else if (m >= MULT_FOR_DUAL) gunLabelEl.textContent = "Twin";
-    else gunLabelEl.textContent = "Sun";
+    else if (m >= MULT_FOR_DUAL) gunLabelEl.textContent = "Dual";
+    else gunLabelEl.textContent = `Needle · ${MULT_FOR_DUAL}`;
   },
   updateEconomy(data) {
     const lifeI = lifeMeterEl?.querySelector("i");
@@ -817,11 +815,9 @@ const ui = {
   },
   updateLives(n) {
     livesEl.textContent = String(n);
-    setPips(document.getElementById("life-hearts"), n, uiURL(SPR.heart));
   },
   updateBombs(n) {
     if (bombsEl) bombsEl.textContent = String(n);
-    setPips(document.getElementById("bomb-pips"), n, uiURL(SPR.bomb));
   },
   updateBest(n) {
     setBestDisplays(n);
@@ -1060,21 +1056,6 @@ if (splash) {
 }
 
 /** Assigned after UI helpers so splash dismiss can safely optional-chain audio. */
-function setPips(el, n, url) {
-  if (!el) return;
-  const count = Math.max(0, n | 0);
-  el.replaceChildren();
-  for (let i = 0; i < count; i++) {
-    const img = document.createElement("img");
-    img.src = url;
-    img.alt = "";
-    img.draggable = false;
-    el.appendChild(img);
-  }
-}
-
-mountTitleScreen(document.getElementById("title-canvas"));
-
 let game = null;
 game = new Game(canvas, ui);
 window.__geometryArena = game;

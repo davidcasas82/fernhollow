@@ -195,18 +195,18 @@ export const GFX_QUALITY_PRESETS = {
     touchMaxDpr: 1.5,
     bloom: false,
     chromatic: false,
-    colorGrade: false,
-    vignette: false,
+    colorGrade: true,
+    vignette: true,
     /** Offscreen world buffer required for grade / vignette */
     offscreenWorld: true,
     /** Fat ink outline + enamel fill */
-    fancyNeon: false,
+    fancyNeon: true,
     localBloom: false,
     /** Warped reactive grid + underlay + under-grid */
     fancyGrid: true,
     gridStepMul: 1,
     /** Floor contact shadows under entities */
-    floorShadows: "none", // 'all' | 'player' | 'none'
+    floorShadows: "all", // 'all' | 'player' | 'none'
     particleScale: 1,
     particleMax: 1600,
     floaterMax: 56,
@@ -439,34 +439,33 @@ export const MORPH = {
 };
 
 export const COLORS = {
-  bg: "#14224f",
-  bgDeep: "#101a3d",
-  grid: "rgba(141, 123, 104, 0.25)",
-  gridMajor: "rgba(196, 180, 154, 0.35)",
-  gridGlow: "rgba(240, 210, 74, 0.28)",
-  player: "#3d9a4a",
-  playerGlow: "#f0d24a",
+  bg: "#07060d",
+  bgDeep: "#12101c",
+  grid: "rgba(243, 230, 200, 0.1)",
+  gridMajor: "rgba(243, 230, 200, 0.2)",
+  gridGlow: "rgba(255, 210, 58, 0.28)",
+  player: "#fff4dc",
+  playerGlow: "#2fd39a",
   playerCore: "#fff4dc",
-  bullet: "#fff4b0",
-  bulletCore: "#fff4b0",
-  bulletTail: "#e07030",
-  // Theme colors for the unchanged behavior ids.
-  wanderer: "#3d9a4a", // Puffling
-  diamond: "#7a3ad4", // Thistle Jay
-  spinner: "#8b5a2b", // Acorn Spinner
-  tank: "#6aaa55", // Moss Turtle
-  snake: "#2f8f4a", // Ivy Wisp
-  pink: "#7dba4a", // Fern Hare
-  splitter: "#8fce4a", // Split Sprout
-  void: "#f0d24a", // Gust Bloom
-  atom: "#fff4b0", // Pollen Puff
-  geom: "#f0d24a", // Sunseed
-  danger: "#d23b3b",
-  bomb: "#f0d24a",
+  bullet: "#fff4dc",
+  bulletCore: "#fff4dc",
+  bulletTail: "#ff4d4d",
+  wanderer: "#5ad4ff",
+  diamond: "#1f9a7a",
+  spinner: "#c9b8e0",
+  tank: "#e8a020",
+  snake: "#ff4d4d",
+  pink: "#ff6a5a",
+  splitter: "#a88bc4",
+  void: "#5a4868",
+  atom: "#d8cce8",
+  geom: "#ffd23a",
+  danger: "#ff4d4d",
+  bomb: "#ffd23a",
   text: "#fff4dc",
-  selector: "#3d9a4a",
-  evolver: "#f0d24a",
-  ink: "#1a1420",
+  selector: "#2fd39a",
+  evolver: "#ffd23a",
+  ink: "#12101c",
   paper: "#fff4dc",
 };
 
@@ -578,9 +577,6 @@ export const ENEMY = {
  * Threat introduction schedule (seconds).
  * First real threat ~35s; void ~105s (priority target, not opening spam).
  */
-// Roster (behavior id → theme). Baron Bramble is not in this table.
-// wanderer Puffling, diamond Thistle Jay, pink Fern Hare, spinner Acorn Spinner,
-// splitter Split Sprout, snake Ivy Wisp, tank Moss Turtle, void Gust Bloom, atom Pollen Puff.
 export const SPAWN_TABLE = [
   { type: "wanderer", weight: 1.25, unlockAt: 0 },
   { type: "diamond", weight: 0.6, unlockAt: 20 },
