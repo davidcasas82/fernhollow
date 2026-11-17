@@ -90,12 +90,30 @@ export function updatePlayer(player, move, aimAngle, dt, firing) {
   return firing && player.fireCd <= 0;
 }
 
-export function createBullet(x, y, angle) {
+/**
+ * Offset from Ryan's center to the v7 muzzle star.
+ * Measured on the shoot cell of ryan.png. Walk-and-shoot bobs a couple of
+ * pixels around the same hand. Down is the raised hand on screen right.
+ */
+export const RYAN_HAND = {
+  down: { x: 30, y: -3 },
+  up: { x: 17, y: -22 },
+  left: { x: -22, y: -1 },
+  right: { x: 23, y: 1 },
+};
+
+export function ryanHandPoint(x, y, dir) {
+  const hand = RYAN_HAND[dir] || RYAN_HAND.down;
+  return { x: x + hand.x, y: y + hand.y };
+}
+
+export function createBullet(x, y, angle, opts = {}) {
   const c = Math.cos(angle);
   const s = Math.sin(angle);
+  const nudge = opts.atPoint ? 0 : PLAYER_RADIUS + 4;
   return {
-    x: x + c * (PLAYER_RADIUS + 4),
-    y: y + s * (PLAYER_RADIUS + 4),
+    x: x + c * nudge,
+    y: y + s * nudge,
     vx: c * BULLET_SPEED,
     vy: s * BULLET_SPEED,
     r: BULLET_RADIUS,

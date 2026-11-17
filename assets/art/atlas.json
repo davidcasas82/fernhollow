@@ -10,8 +10,8 @@
       "file": "ryan.png",
       "frame_w": 80,
       "frame_h": 96,
-      "frame_count": 24,
-      "columns": 6,
+      "frame_count": 40,
+      "columns": 10,
       "rows": 4,
       "row_order": [
         "down",
@@ -25,7 +25,11 @@
         "walk1",
         "walk2",
         "walk3",
-        "shoot"
+        "shoot",
+        "walkshoot0",
+        "walkshoot1",
+        "walkshoot2",
+        "walkshoot3"
       ],
       "anchor": {
         "x": 40,
@@ -189,6 +193,90 @@
             }
           ],
           "fps": 0
+        },
+        "walkshoot_down": {
+          "frames": [
+            {
+              "col": 6,
+              "row": 0
+            },
+            {
+              "col": 7,
+              "row": 0
+            },
+            {
+              "col": 8,
+              "row": 0
+            },
+            {
+              "col": 9,
+              "row": 0
+            }
+          ],
+          "fps": 8
+        },
+        "walkshoot_up": {
+          "frames": [
+            {
+              "col": 6,
+              "row": 1
+            },
+            {
+              "col": 7,
+              "row": 1
+            },
+            {
+              "col": 8,
+              "row": 1
+            },
+            {
+              "col": 9,
+              "row": 1
+            }
+          ],
+          "fps": 8
+        },
+        "walkshoot_left": {
+          "frames": [
+            {
+              "col": 6,
+              "row": 2
+            },
+            {
+              "col": 7,
+              "row": 2
+            },
+            {
+              "col": 8,
+              "row": 2
+            },
+            {
+              "col": 9,
+              "row": 2
+            }
+          ],
+          "fps": 8
+        },
+        "walkshoot_right": {
+          "frames": [
+            {
+              "col": 6,
+              "row": 3
+            },
+            {
+              "col": 7,
+              "row": 3
+            },
+            {
+              "col": 8,
+              "row": 3
+            },
+            {
+              "col": 9,
+              "row": 3
+            }
+          ],
+          "fps": 8
         }
       }
     },

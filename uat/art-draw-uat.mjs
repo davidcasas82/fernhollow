@@ -157,6 +157,115 @@ draws = assertSprites(ctx, "ryan shoot");
 assert.equal(draws[0][2], 400);
 assert.equal(draws[0][3], 288);
 
+function assertRyanCell(label, player, clipName, index) {
+  ctx.calls.length = 0;
+  drawPlayer(ctx, player, 0);
+  const drawn = assertSprites(ctx, label);
+  const clip = book.sheets.ryan.clips[clipName];
+  assert.ok(clip?.frames?.length, `${label} missing ${clipName}`);
+  const frame = index == null ? clip.frames[0] : clip.frames[index];
+  assert.ok(frame, `${label} index ${index}`);
+  assert.equal(drawn[0][1].__artFile, "ryan.png", label);
+  assert.equal(drawn[0][2], frame.sx, `${label} sx`);
+  assert.equal(drawn[0][3], frame.sy, `${label} sy`);
+  assert.equal(drawn[0][4], frame.sw, `${label} sw`);
+  assert.equal(drawn[0][5], frame.sh, `${label} sh`);
+  assert.equal(ctx.imageSmoothingEnabled, false, label);
+}
+
+const ryanDirs = [
+  ["down", 0, 90, Math.PI / 2],
+  ["up", 0, -90, -Math.PI / 2],
+  ["left", -90, 0, Math.PI],
+  ["right", 90, 0, 0],
+];
+
+for (const dir of ["down", "up", "left", "right"]) {
+  assert.equal(book.sheets.ryan.clips[`walk_${dir}`].frames.length, 4, dir);
+  assert.equal(book.sheets.ryan.clips[`walkshoot_${dir}`].frames.length, 4, dir);
+}
+
+for (const [dir, , , angle] of ryanDirs) {
+  assertRyanCell(
+    `ryan stand shoot ${dir}`,
+    { x: 400, y: 500, vx: 0, vy: 0, angle, fireCd: 0.2, r: 13, invuln: 0 },
+    `shoot_${dir}`,
+    null
+  );
+}
+
+for (const [dir, vx, vy] of ryanDirs) {
+  for (const index of [0, 1, 2, 3]) {
+    assertRyanCell(
+      `ryan walk ${dir} ${index}`,
+      { x: 400, y: 500, vx, vy, angle: 0, fireCd: 0, r: 13, invuln: 0, step: index * 16 },
+      `walk_${dir}`,
+      index
+    );
+  }
+}
+
+for (const [dir, vx, vy, angle] of ryanDirs) {
+  for (const index of [0, 1, 2, 3]) {
+    const step = index * 16;
+    const body = { x: 400, y: 500, vx, vy, angle, r: 13, invuln: 0, step };
+    assertRyanCell(`ryan walk before shoot ${dir} ${index}`, { ...body, fireCd: 0 }, `walk_${dir}`, index);
+    assertRyanCell(
+      `ryan walkshoot ${dir} ${index}`,
+      { ...body, fireCd: 0.2 },
+      `walkshoot_${dir}`,
+      index
+    );
+    assertRyanCell(`ryan walk after shoot ${dir} ${index}`, { ...body, fireCd: 0 }, `walk_${dir}`, index);
+  }
+}
+
+ctx.calls.length = 0;
+drawPlayer(
+  ctx,
+  {
+    x: 400,
+    y: 500,
+    vx: 90,
+    vy: 0,
+    angle: 0,
+    fireCd: 0.2,
+    r: 13,
+    invuln: 0,
+    hurt: 0.1,
+    face: "right",
+    step: 32,
+  },
+  0
+);
+draws = assertSprites(ctx, "ryan hurt while moving and firing");
+assert.equal(draws[0][1].__artFile, "ryan-extra.png");
+assert.equal(draws[0][2], 240);
+assert.equal(draws[0][3], 0);
+
+ctx.calls.length = 0;
+drawPlayer(
+  ctx,
+  {
+    x: 400,
+    y: 500,
+    vx: 90,
+    vy: 0,
+    angle: 0,
+    fireCd: 0.2,
+    r: 13,
+    invuln: 0,
+    deathAge: 0,
+    face: "right",
+    step: 32,
+  },
+  0
+);
+draws = assertSprites(ctx, "ryan death while moving and firing");
+assert.equal(draws[0][1].__artFile, "ryan-extra.png");
+assert.equal(draws[0][2], 0);
+assert.equal(draws[0][3], 384);
+
 const samples = [
   ["wanderer", "puffling.png"],
   ["diamond", "thistle-jay.png"],

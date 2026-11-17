@@ -93,6 +93,7 @@ const {
   createPlayer,
   updatePlayer,
   createBullet,
+  ryanHandPoint,
   updateBullets,
   spawnEnemy,
   pickSpawnType,
@@ -235,6 +236,28 @@ test("bullet spawns along aim angle, not move direction", () => {
   const b = createBullet(p.x, p.y, p.angle);
   assert.ok(b.vy < 0, "bullet goes up");
   assert.ok(Math.abs(b.vx) < 1, `bullet mostly vertical, vx=${b.vx}`);
+});
+
+test("muzzle and bolt spawn at the v7 hand for each facing", () => {
+  const origin = { x: 400, y: 500 };
+  const expect = {
+    down: { x: 430, y: 497 },
+    up: { x: 417, y: 478 },
+    left: { x: 378, y: 499 },
+    right: { x: 423, y: 501 },
+  };
+  const angle = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 };
+  for (const [dir, point] of Object.entries(expect)) {
+    const hand = ryanHandPoint(origin.x, origin.y, dir);
+    assert.equal(hand.x, point.x, `${dir} x`);
+    assert.equal(hand.y, point.y, `${dir} y`);
+    const bolt = createBullet(hand.x, hand.y, angle[dir], { atPoint: true });
+    assert.equal(bolt.x, hand.x, `${dir} bolt x`);
+    assert.equal(bolt.y, hand.y, `${dir} bolt y`);
+  }
+  const down = ryanHandPoint(origin.x, origin.y, "down");
+  assert.ok(down.x > origin.x + 20, "down hand is on screen right");
+  assert.ok(Math.abs(down.y - origin.y) < 12, "down hand is not on the belly");
 });
 
 // --- Combat / entities ---
