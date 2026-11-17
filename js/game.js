@@ -75,6 +75,7 @@ import {
   updateBullets,
   updateEnemies,
   updateGeoms,
+  ryanHandPoint,
   updatePlayer,
 } from "./entities.js";
 import {
@@ -117,7 +118,7 @@ import {
   drawDamageNumbers,
   enemyIsOutline,
 } from "./render.js";
-import { clampToFloor, drawCourtyard, insideFloor } from "./art.js";
+import { clampToFloor, drawCourtyard, facing4, insideFloor } from "./art.js";
 import { applyKnock, enemyFrame, fxLife, knock, TIMING } from "./motion.js";
 import {
   compositeBloom,
@@ -2226,19 +2227,16 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
       if (this.mult >= MULT_FOR_TRIPLE) {
         angles = [a - FIRE_SPREAD, a, a + FIRE_SPREAD];
       }
+      const hand = ryanHandPoint(this.player.x, this.player.y, facing4(a));
       for (const ang of angles) {
-        this.bullets.push(createBullet(this.player.x, this.player.y, ang));
+        this.bullets.push(createBullet(hand.x, hand.y, ang, { atPoint: true }));
       }
       this.player.fireCd = this._fireCooldown();
       this.audio.shoot(this.mult);
       recoil(this.cam, a, 5.2);
-      const c = Math.cos(a);
-      const s = Math.sin(a);
-      const mx = this.player.x + c * 22;
-      const my = this.player.y + s * 22;
-      this.particles.burst(mx, my, COLORS.paper || "#fff4dc", 10, 220);
-      this.particles.burst(mx, my, COLORS.bomb, 6, 160);
-      this._gridPulse(mx, my, 0.28);
+      this.particles.burst(hand.x, hand.y, COLORS.paper || "#fff4dc", 10, 220);
+      this.particles.burst(hand.x, hand.y, COLORS.bomb, 6, 160);
+      this._gridPulse(hand.x, hand.y, 0.28);
     }
 
     // Hard invuln countdown (ms). No extension — that caused infinite safety in crowds.
