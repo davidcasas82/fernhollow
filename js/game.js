@@ -1664,21 +1664,8 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
       enemy.type === "splitter";
     // Sektori kill juice: denser front-loaded pop (short TTL handled in particles)
     this._artFx("poof", enemy.x, enemy.y);
-    this.particles.burst(enemy.x, enemy.y, enemy.color, 52 + enemy.r * 1.8, 400 + enemy.r * 12);
-    this.particles.burst(enemy.x, enemy.y, COLORS.paper || "#fff4dc", 22 + (big ? 14 : 0), 320);
-    this.particles.ring(enemy.x, enemy.y, enemy.color, big ? 44 : 24, big ? 420 : 280);
-    if (!fromBomb && (big || Math.random() < 0.22)) {
-      const pops = big
-        ? ["WHAM", "KABOOM", "SMASH"]
-        : ["POW", "BANG", "KAPOW"];
-      this.particles.stamp(
-        enemy.x,
-        enemy.y - 10,
-        pops[(Math.random() * pops.length) | 0],
-        big ? COLORS.danger : COLORS.bomb,
-        big ? 3.1 : 2.15
-      );
-    }
+    this.particles.burst(enemy.x, enemy.y, enemy.color, 18 + (big ? 8 : 0), 220);
+    this.particles.burst(enemy.x, enemy.y, COLORS.paper || "#fff4dc", 8, 160);
     if (big) {
       this.particles.shockwave(enemy.x, enemy.y, enemy.color, 220 + enemy.r * 8);
       this.bombFlash = Math.max(this.bombFlash, 0.22);
@@ -1731,11 +1718,8 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     this._gridPulse(this.player.x, this.player.y, 4.5);
     this.particles.shockwave(this.player.x, this.player.y, COLORS.bomb, 620);
     this.particles.shockwave(this.player.x, this.player.y, COLORS.paper || "#fff4dc", 400);
-    this.particles.stamp(this.player.x, this.player.y - 24, "BOOM", COLORS.coral || COLORS.danger, 3.4);
-    this.particles.ring(this.player.x, this.player.y, COLORS.bomb, 72, 560);
-    this.particles.burst(this.player.x, this.player.y, COLORS.player, 70, 520);
-    this.particles.burst(this.player.x, this.player.y, COLORS.bomb, 40, 440);
-    this.particles.burst(this.player.x, this.player.y, "#ffffff", 36, 400);
+    this.particles.burst(this.player.x, this.player.y, COLORS.bomb, 16, 200);
+    this._artFx("poof", this.player.x, this.player.y);
 
     for (const e of this.enemies) {
       if (e.pathBoss || e.boss) {
@@ -1995,10 +1979,8 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     this.ui.updateGun?.(this.mult);
 
     this.audio.playerHit();
-    this.particles.shockwave(this.player.x, this.player.y, COLORS.danger, 380);
-    this.particles.ring(this.player.x, this.player.y, COLORS.danger, 52, 420);
-    this.particles.burst(this.player.x, this.player.y, COLORS.danger, 36, 340);
-    this.particles.burst(this.player.x, this.player.y, "#ffffff", 28, 320);
+    this._artFx("poof", this.player.x, this.player.y);
+    this.particles.burst(this.player.x, this.player.y, COLORS.danger, 12, 180);
     this._gridPulse(this.player.x, this.player.y, 3.2);
     this.afterimages = [];
 
@@ -2297,11 +2279,10 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
         if (this._bulletHitsEnemy(b, e)) {
           b.dead = true;
           e.hp -= 1;
-          this._artFx("hit", b.x, b.y);
+          const lethal = e.hp <= 0;
+          this._chipImpact(e, b.x, b.y, b.vx, b.vy, { lethal });
           this.audio.enemyHit();
-          this.particles.burst(b.x, b.y, e.color, 10, 160);
-          this.particles.burst(b.x, b.y, "#ffffff", 3, 100);
-          if (e.hp <= 0) {
+          if (lethal) {
             e.dead = true;
             this._onKill(e);
           }
@@ -2342,6 +2323,18 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     if (this.pathLevel && !this.pathEnding) {
       this._tickPathMode(dt);
     }
+  }
+
+  _chipImpact(enemy, x, y, vx, vy, { lethal = false } = {}) {
+    const sp = Math.hypot(vx, vy) || 1;
+    enemy.knockX = (enemy.knockX || 0) + (vx / sp) * 240;
+    enemy.knockY = (enemy.knockY || 0) + (vy / sp) * 240;
+    enemy.knockT = 0.12;
+    enemy.flash = 0.12;
+    if (!lethal) this._artFx("poof", x, y);
+    this.particles.burst(x, y, enemy.color || "#fff4dc", 8, 140);
+    addTrauma(this.cam, lethal ? 0.04 : 0.05);
+    this.bombFlash = Math.max(this.bombFlash, lethal ? 0.06 : 0.1);
   }
 
   _artFx(kind, x, y) {

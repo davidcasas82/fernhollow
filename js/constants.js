@@ -607,3 +607,9 @@ export const BGM_TRACKS = [
   "audio/neon-swarm-2.mp3",
 ];
 export const BGM_VOLUME = 0.38;
+
+/**
+ * Original chiptune in js/fern-score.js (title, courtyard, boss, quieter effects).
+ * Leave this false so the game keeps playing Neon Swarm until the previews are approved.
+ */
+export const FERN_CHIPTUNE = false;

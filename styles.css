@@ -375,53 +375,37 @@ body {
 
 .title-logo-line {
   display: block;
-  font-family: var(--display);
-  font-weight: 900;
-  font-style: italic;
-  letter-spacing: 0.02em;
+  font-family: "Press Start 2P", monospace;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  -webkit-text-stroke: 0.5px rgba(0, 0, 0, 0.35);
 }
 
 .title-logo-geo {
-  font-size: clamp(2.6rem, 11.5vw, 9.5rem);
+  font-size: clamp(0.7rem, 2.2vw, 1.05rem);
 }
 
 .title-logo-arena {
-  font-size: clamp(3rem, 13.5vw, 11rem);
+  font-size: clamp(0.78rem, 2.6vw, 1.2rem);
 }
 
 .title-logo-line {
-  letter-spacing: -0.03em;
-}
-/* Block comic lockup: magenta face, cyan extrusion, ink outline */
-.block-mark,
-.title-logo-fill,
-.logo-fill,
-.comic-stamp {
-  display: inline-block;
-  font-style: italic;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  color: #ff2d6a;
-  -webkit-text-fill-color: #ff2d6a;
-  -webkit-text-stroke: 0.045em #111;
-  paint-order: stroke fill;
-  text-shadow:
-    0.018em 0.018em 0 #3de8ff,
-    0.036em 0.036em 0 #3de8ff,
-    0.054em 0.054em 0 #2ad4f0,
-    0.072em 0.072em 0 #18c4e4,
-    0.09em 0.09em 0 #111,
-    0.14em 0.16em 0 rgba(0, 0, 0, 0.28);
+  letter-spacing: 0.04em;
 }
 
-.comic-stamp {
-  position: relative;
-  background-image: radial-gradient(circle, rgba(17, 17, 17, 0.28) 1.15px, transparent 1.35px);
-  background-size: 6px 6px;
-  -webkit-background-clip: text;
-  background-clip: text;
+.block-mark,
+.title-logo-fill,
+.logo-fill {
+  display: inline-block;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: #f4e2a8;
+  -webkit-text-fill-color: #f4e2a8;
+  -webkit-text-stroke: 0;
+  paint-order: fill;
+  text-shadow: 2px 2px 0 #1a1208;
 }
 
 .path-result.is-fail .path-result-fill,
@@ -526,10 +510,7 @@ body {
 .btn.arcade.path-cta {
   min-width: 0;
   color: #12101c;
-  background:
-    radial-gradient(circle, rgba(0, 0, 0, 0.16) 1px, transparent 1.2px),
-    linear-gradient(180deg, #ff7a6e, var(--coral));
-  background-size: 7px 7px, auto;
+  background: linear-gradient(180deg, #ff7a6e, var(--coral));
   border: 3px solid #000;
   box-shadow: 6px 7px 0 #000;
   text-shadow: none;
@@ -638,10 +619,7 @@ body {
   font-size: clamp(1.35rem, 2.6vw, 1.75rem);
   letter-spacing: 0.06em;
   color: #12101c;
-  background:
-    radial-gradient(circle, rgba(0, 0, 0, 0.16) 1px, transparent 1.2px),
-    linear-gradient(180deg, #5cf0b8, var(--jade));
-  background-size: 7px 7px, auto;
+  background: linear-gradient(180deg, #5cf0b8, var(--jade));
   border: 3px solid #000;
   box-shadow: 6px 7px 0 #000;
   text-shadow: none;
@@ -822,28 +800,25 @@ body {
   display: block;
   width: 100%;
   text-align: center;
-  font-family: var(--display);
-  font-weight: 900;
-  font-style: italic;
-  letter-spacing: 0.01em;
+  font-family: "Press Start 2P", monospace;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .gameover-game {
-  font-size: clamp(3.2rem, 14vw, 7.2rem);
+  font-size: clamp(1rem, 3.4vw, 1.7rem);
 }
 
 .gameover-over {
-  font-size: clamp(3.8rem, 16vw, 8.4rem);
+  font-size: clamp(1.05rem, 3.8vw, 1.85rem);
 }
 
-/*
- * Same chrome stack as title logo: extruded black depth + bright face gradient.
- * Keep fill filter light so the gradient layer actually reads (was too muddy).
- */
 .gameover-fill {
-  color: #ff2d6a;
-  -webkit-text-fill-color: #ff2d6a;
+  color: #f4e2a8;
+  -webkit-text-fill-color: #f4e2a8;
+  text-shadow: 2px 2px 0 #1a1208;
 }
 
 .gameover-tag {
@@ -1543,21 +1518,19 @@ body {
 
 .path-result-word {
   display: block;
-  font-family: var(--display);
-  font-weight: 900;
-  font-style: italic;
-  font-size: clamp(3.4rem, 16vw, 7.2rem);
-  letter-spacing: 0.02em;
+  font-family: "Press Start 2P", monospace;
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(1rem, 3.6vw, 1.8rem);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .path-result.is-fail .path-result-fill,
 .gameover-over .gameover-fill {
-  color: #ff6a5a;
-  background-image:
-    radial-gradient(circle, rgba(18, 16, 28, 0.45) 1.2px, transparent 1.4px),
-    linear-gradient(180deg, #ffc4b8 0%, #ff6a5a 55%, #ff4d4d 100%);
-  background-size: 7px 7px, auto;
+  color: #ff8a7a;
+  -webkit-text-fill-color: #ff8a7a;
+  background-image: none;
 }
 
 .path-result-tag {

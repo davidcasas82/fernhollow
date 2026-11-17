@@ -12,6 +12,8 @@
     "uat:logic": "node uat/logic-uat.mjs",
     "uat:adversarial": "node uat/adversarial-uat.mjs",
     "uat:browser": "node uat/browser-uat.mjs",
+    "uat:chiptune": "node uat/chiptune-uat.mjs",
+    "uat:comic": "node uat/comic-uat.mjs",
     "itch-shots": "node uat/capture-itch-shots.mjs"
   }
 }

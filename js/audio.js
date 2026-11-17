@@ -1,10 +1,13 @@
 /**
  * SFX (synth) + looping BGM tracks.
- * Classic: two Neon Swarm beds, lazy-loaded.
+ * Classic: two Neon Swarm beds, lazy-loaded. This is what the game plays.
  * Path: playTheme(theme) probes a file, else classic fallback.
+ * Fernhollow chiptune is wired and stays silent while FERN_CHIPTUNE is false.
  */
 
-import { BGM_TRACKS, BGM_VOLUME } from "./constants.js";
+import { BGM_TRACKS, BGM_VOLUME, FERN_CHIPTUNE } from "./constants.js";
+import { fernBattleId } from "./fern-score.js";
+import { FernPlayer } from "./fern-player.js";
 
 export class AudioBus {
   constructor() {
@@ -28,6 +31,14 @@ export class AudioBus {
     this._fadeTimer = null;
     this._shootFlip = false;
     this._loggedMissing = new Set();
+    /** Null while Neon Swarm is the default. */
+    this.chiptune = FERN_CHIPTUNE ? new FernPlayer(this) : null;
+  }
+
+  _chiptuneSfx(name, opts) {
+    if (!this.chiptune) return false;
+    this.chiptune.sfx(name, opts);
+    return true;
   }
 
   ensure() {
@@ -61,6 +72,7 @@ export class AudioBus {
       this._setAllBgmVolume(0);
     } else {
       this._setAllBgmVolume(this.bgmVolume);
+      this.chiptune?.resume();
       if (this._activeEl) {
         this._activeEl.volume = this.bgmVolume;
         this._activeEl.play().catch(() => {});
@@ -95,39 +107,50 @@ export class AudioBus {
   }
 
   shoot(mult = 1) {
+    if (this._chiptuneSfx("shoot", { rate: 1 + Math.min(0.18, Math.max(0, mult - 1) * 0.003) })) return;
     const p = 1 + Math.min(0.35, (mult - 1) * 0.004);
     this.tone(1180 * p, 0.038, "square", 0.028, 420 * p);
     this.tone(240 * p, 0.03, "triangle", 0.014, 90);
   }
 
   enemyHit() {
+    if (this._chiptuneSfx("hit")) return;
     this.tone(360, 0.05, "triangle", 0.035, 160);
   }
 
   enemyDeath(pitch = 1) {
+    if (this._chiptuneSfx("enemyDeath", { rate: Math.max(0.85, Math.min(1.35, pitch || 1)) })) return;
     this.tone(220 * pitch, 0.14, "sawtooth", 0.05, 50);
     this.tone(520 * pitch, 0.1, "triangle", 0.035, 180);
     this.tone(900 * pitch, 0.06, "sine", 0.02, 200);
   }
 
   playerHit() {
+    if (this._chiptuneSfx("hurt")) return;
     this.tone(140, 0.25, "sawtooth", 0.06, 40);
     this.tone(90, 0.3, "square", 0.035, 30);
   }
 
   gameOver() {
+    if (this.chiptune) {
+      this.chiptune.sfx("gameOver");
+      this.fadeOutBgm(1.2);
+      return;
+    }
     this.tone(220, 0.35, "sawtooth", 0.05, 70);
     setTimeout(() => this.tone(160, 0.4, "triangle", 0.04, 50), 120);
     this.fadeOutBgm(1.2);
   }
 
   start() {
+    if (this._chiptuneSfx("start")) return;
     [392, 523, 659].forEach((f, i) => {
       setTimeout(() => this.tone(f, 0.1, "triangle", 0.045), i * 60);
     });
   }
 
   splashDismiss() {
+    if (this._chiptuneSfx("splash")) return;
     this.tone(220, 0.12, "sawtooth", 0.04, 80);
     this.tone(660, 0.1, "square", 0.035, 1320);
     setTimeout(() => this.tone(880, 0.14, "triangle", 0.04, 1760), 40);
@@ -136,18 +159,21 @@ export class AudioBus {
   }
 
   levelUp() {
+    if (this._chiptuneSfx("levelUp")) return;
     [523, 659, 784, 1046].forEach((f, i) => {
       setTimeout(() => this.tone(f, 0.1, "square", 0.04), i * 55);
     });
   }
 
   geom(mult = 1) {
+    if (this._chiptuneSfx("pickup", { rate: 1 + Math.min(0.12, Math.max(0, mult - 1) * 0.002) })) return;
     const p = 1 + Math.min(1.2, (mult - 1) * 0.012);
     this.tone(660 * p, 0.06, "sine", 0.045, 1200 * p);
     this.tone(990 * p, 0.05, "triangle", 0.025, 1400 * p);
   }
 
   bomb() {
+    if (this._chiptuneSfx("bomb")) return;
     this.tone(60, 0.4, "sawtooth", 0.08, 25);
     this.tone(160, 0.3, "square", 0.05, 40);
     this.tone(320, 0.2, "triangle", 0.04, 80);
@@ -155,22 +181,49 @@ export class AudioBus {
   }
 
   extraLife() {
+    if (this._chiptuneSfx("extraLife")) return;
     [523, 659, 784, 1046].forEach((f, i) => {
       setTimeout(() => this.tone(f, 0.12, "triangle", 0.05), i * 70);
     });
   }
 
   extraBomb() {
+    if (this._chiptuneSfx("extraBomb")) return;
     [392, 494, 587].forEach((f, i) => {
       setTimeout(() => this.tone(f, 0.1, "square", 0.035), i * 55);
     });
   }
 
+  /** Title loop. No-op while the chiptune switch is off. */
+  playMenuTheme() {
+    this.chiptune?.play("title", { restart: false });
+  }
+
+  /** Short confirm / move ticks. No-op while the chiptune switch is off. */
+  menuMove() {
+    this.chiptune?.sfx("menuMove");
+  }
+
+  menuSelect() {
+    this.chiptune?.sfx("menuSelect");
+  }
+
+  /** Sting when a boss steps in. The boss loop is selected by playTheme. */
+  bossIntro() {
+    this.chiptune?.sfx("bossIntro");
+  }
+
   /**
    * Play a Path theme bed. Missing file → classic fallback 1|2.
+   * With the chiptune switch on, boss-pulse maps to the boss loop and
+   * every other bed maps to the courtyard loop.
    * @param {{ id?: string, src?: string, fallback?: 1|2 } | null | undefined} theme
    */
   playTheme(theme, { restart = true } = {}) {
+    if (this.chiptune) {
+      this.chiptune.play(fernBattleId(theme), { restart });
+      return;
+    }
     if (!theme) {
       this.playLevelTheme(1, { restart });
       return;
@@ -208,6 +261,10 @@ export class AudioBus {
   }
 
   playLevelTheme(level, { restart = false } = {}) {
+    if (this.chiptune) {
+      this.chiptune.play("courtyard", { restart });
+      return;
+    }
     if (!this.trackSrcs.length) return;
     this.ensure();
     const idx = (Math.max(1, level) - 1) % this.trackSrcs.length;
@@ -226,6 +283,7 @@ export class AudioBus {
   }
 
   stopBgm() {
+    this.chiptune?.stop();
     this._clearFade();
     this._forEachEl((t) => {
       try {
@@ -241,6 +299,7 @@ export class AudioBus {
   }
 
   pauseBgm() {
+    this.chiptune?.pause();
     this._forEachEl((t) => {
       try {
         t.pause();
@@ -252,6 +311,7 @@ export class AudioBus {
 
   resumeBgm() {
     if (!this.enabled) return;
+    this.chiptune?.resume();
     this.ensure();
     const t = this._activeEl || this.tracks[this.bgmIndex];
     if (!t) return;
@@ -260,6 +320,7 @@ export class AudioBus {
   }
 
   fadeOutBgm(seconds = 1) {
+    this.chiptune?.fadeOut(seconds);
     const t = this._activeEl || (this.bgmIndex >= 0 ? this.tracks[this.bgmIndex] : null);
     if (!t) return;
     this._animateVolume(t, t.volume, 0, seconds, () => {
@@ -269,6 +330,18 @@ export class AudioBus {
         /* ignore */
       }
     });
+  }
+
+  _silenceHtml() {
+    this._forEachEl((t) => {
+      try {
+        t.pause();
+        t.volume = 0;
+      } catch {
+        /* ignore */
+      }
+    });
+    this._activeEl = null;
   }
 
   _classicTrack(idx) {

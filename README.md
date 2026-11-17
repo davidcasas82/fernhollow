@@ -86,6 +86,8 @@ Suno-generated instrumental **Neon Swarm** (two variants):
 
 Heat ticks every **70s** of survival (see `LEVEL_DURATION_SEC`). Tracks crossfade without restarting; mute/`M` silences SFX + BGM.
 
+An original chiptune set is in the game code and in `docs/previews/audio/`: a heroic title loop, a courtyard battle whose bass line leads, a heavier faster boss loop, and quieter effects. `FERN_CHIPTUNE` in `js/constants.js` stays off, so Neon Swarm is still what you hear.
+
 ## Stack
 
 - Vanilla HTML / CSS / JS (ES modules)
