@@ -1,5 +1,13 @@
 import { FLOATER_MAX, GFX, PARTICLE_MAX } from "./constants.js";
 import { colorWithAlpha } from "./fx.js";
+import { drawText, textWidth } from "./pixel-text.js";
+
+const COMIC_WORD =
+  /^(?:BANG|BOOM|POW|ZAP|WHAM|BAM|KAPOW|KABOOM|SMASH|CRASH|WHACK|THWACK|KLONK|SPLAT|CRUNCH)[!?.]*$/i;
+
+export function isComicWord(text) {
+  return COMIC_WORD.test(String(text ?? "").trim());
+}
 
 function particleCap() {
   return Math.max(40, GFX.PARTICLE_MAX_LIVE ?? PARTICLE_MAX);
@@ -40,7 +48,7 @@ export class ParticleSystem {
       const ang = Math.random() * Math.PI * 2;
       const sp = speed * (0.45 + Math.random() * 1.2);
       // Bias streaks — short hot filaments over lingering soft dots
-      const isStreak = Math.random() < 0.72;
+      const isStreak = GFX.PIXEL_ART ? false : Math.random() < 0.72;
       const life = isStreak
         ? streakLife * (0.55 + Math.random() * 0.55)
         : softLife * (0.5 + Math.random() * 0.55);
@@ -72,7 +80,7 @@ export class ParticleSystem {
         maxLife: life,
         size: 2.6 + Math.random() * 2.2,
         color: "#fff4dc",
-        streak: true,
+        streak: GFX.PIXEL_ART ? false : true,
         hot: false,
       });
     }
@@ -95,7 +103,7 @@ ring(x, y, color, count = 40, speed = 360) {
         maxLife: life,
         size: 2.4,
         color,
-        streak: true,
+        streak: GFX.PIXEL_ART ? false : true,
         hot: i % 2 === 0,
       });
     }
@@ -198,35 +206,18 @@ ring(x, y, color, count = 40, speed = 360) {
     }
   }
 
-floater(x, y, text, color = "#ffffff", scale = 1) {
+  floater(x, y, text, color = "#ffffff", scale = 1) {
+    if (isComicWord(text)) return;
     if (this.floaters.length >= floaterCap()) this.floaters.shift();
     this.floaters.push({
       x: x + (Math.random() - 0.5) * 12,
       y,
-      text,
+      text: String(text),
       color,
       life: 0.95,
       maxLife: 0.95,
       vy: -46,
       scale,
-      stamp: false,
-    });
-  }
-
-  /** JSRF / comic wall stamp — POW, BANG, WHAM. Visual only. */
-  stamp(x, y, text, color = "#ffd23a", scale = 1.8) {
-    if (this.floaters.length >= floaterCap()) this.floaters.shift();
-    this.floaters.push({
-      x: x + (Math.random() - 0.5) * 18,
-      y: y + (Math.random() - 0.5) * 10,
-      text,
-      color,
-      life: 0.55,
-      maxLife: 0.55,
-      vy: -18,
-      scale,
-      stamp: true,
-      tilt: (Math.random() - 0.5) * 0.7,
     });
   }
 
@@ -257,7 +248,7 @@ vacuumInhale(cx, cy, color = "#b8ff4a") {
         maxLife: 0.8,
         size: 1.2 + Math.random() * 2.4,
         color: Math.random() < 0.35 ? "#ffffff" : color,
-        streak: true,
+        streak: GFX.PIXEL_ART ? false : true,
         hot: Math.random() < 0.55,
         attract: true,
         tx: cx,
@@ -282,7 +273,7 @@ vacuumInhale(cx, cy, color = "#b8ff4a") {
         maxLife: 0.45,
         size: 1.5 + Math.random() * 1.8,
         color: i % 2 === 0 ? "#ffffff" : color,
-        streak: true,
+        streak: GFX.PIXEL_ART ? false : true,
         hot: true,
         attract: true,
         tx: cx,
@@ -323,7 +314,7 @@ const room = particleCap() - this.particles.length;
         maxLife: 0.5,
         size: 1.1 + Math.random() * 2,
         color: Math.random() < 0.4 ? "#e8ffb0" : color,
-        streak: true,
+        streak: GFX.PIXEL_ART ? false : true,
         hot: Math.random() < 0.5,
         attract: true,
         tx: cx,
@@ -452,7 +443,16 @@ const room = particleCap() - this.particles.length;
     ctx.save();
     ctx.globalCompositeOperation = "source-over";
 
-    if (!GFX.PIXEL_ART) {
+    if (GFX.PIXEL_ART) {
+      for (const p of this.particles) {
+        const a = Math.max(0, p.life / p.maxLife);
+        const s = Math.max(1, Math.round(p.size > 2 ? 2 : 1));
+        ctx.globalAlpha = a;
+        ctx.fillStyle = p.color;
+        ctx.fillRect((p.x | 0) - (s > 1 ? 1 : 0), (p.y | 0) - (s > 1 ? 1 : 0), s, s);
+      }
+      ctx.globalAlpha = 1;
+    } else if (!GFX.PIXEL_ART) {
     for (const p of this.particles) {
       const a = Math.max(0, p.life / p.maxLife);
       if (p.streak) {
@@ -545,26 +545,18 @@ const room = particleCap() - this.particles.length;
 
     ctx.restore();
 
-    // Score floaters (normal blend, readable)
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+    // Plain pixel labels. No ink burst behind the glyphs.
+    ctx.globalAlpha = 1;
     for (const f of this.floaters) {
+      if (isComicWord(f.text)) continue;
       const a = Math.max(0, f.life / f.maxLife);
-      const sc = (f.scale || 1) * (0.85 + 0.25 * a);
+      const scale = Math.max(1, Math.round((f.scale || 1) * 2));
+      const label = String(f.text).replace(/×/g, "X").replace(/→/g, "-");
       ctx.save();
-      ctx.translate(f.x, f.y);
-      ctx.scale(sc, sc);
+      ctx.translate(f.x | 0, f.y | 0);
       ctx.globalAlpha = a;
-      if (f.tilt) ctx.rotate(f.tilt);
-      ctx.font = f.stamp
-        ? "italic 900 46px 'Barlow Condensed', Outfit, sans-serif"
-        : "700 18px Outfit, sans-serif";
-      ctx.strokeStyle = "#12101c";
-      ctx.lineWidth = f.stamp ? 10 : 3.5;
-      ctx.lineJoin = "round";
-      ctx.strokeText(f.text, 0, 0);
-      ctx.fillStyle = f.color;
-      ctx.fillText(f.text, 0, 0);
+      const w = textWidth(label, scale);
+      drawText(ctx, label, -Math.round(w / 2), -scale * 4, scale, f.color);
       ctx.restore();
     }
     ctx.globalAlpha = 1;

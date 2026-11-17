@@ -809,6 +809,7 @@ function bossLiteController() {
         ]);
         bossSpawned = true;
         g.pathBossAlive = true;
+        g.audio?.bossIntro?.();
         if (bossDef.label && g.particles?.floater && g.player) {
           g.particles.floater(
             g.player.x,

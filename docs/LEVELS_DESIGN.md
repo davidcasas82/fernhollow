@@ -642,7 +642,7 @@ Keep the **live-grid neon** language from `BUILD_CONTEXT.md`. No frosted SaaS mo
 
 ## Path audio (bespoke themes)
 
-Classic Evolved keeps today’s two **Neon Swarm** loops (`BGM_TRACKS`, odd/even via `playLevelTheme(level)`).
+Classic Evolved and every non-boss stage play the courtyard loop. The boss stage plays the boss loop. Both are synthesized in `js/fern-score.js`.
 
 Path levels each get a **named theme bed** so every stage feels authored. Ship code + schema first; drop MP3s as they are produced.
 
@@ -667,10 +667,8 @@ type PathThemeId =
 interface LevelRules {
   // ...existing fields...
   /**
-   * BGM preference (legacy shorthand still valid):
-   *   1 | 2     → classic Neon Swarm index (fallback)
-   *   "auto"    → order parity → classic 1/2
-   * Prefer themeId when set.
+   * Legacy parity hint. Playback uses the courtyard loop, or the boss loop
+   * when themeId is boss-pulse.
    */
   bgm?: 1 | 2 | "auto";
   /** Preferred Path theme bed (bespoke track). */
@@ -692,22 +690,13 @@ interface PathThemeMeta {
 }
 ```
 
-### Playback contract (`audio.js` — later implement)
+### Playback contract
 
-```js
-// Preferred entry for Path:
-audio.playTheme(themeId | levelDef, { restart?: boolean })
-// Resolve order:
-// 1. level.rules.themeId → PATH_THEMES[id].src if audio can play
-// 2. level.rules.bgm 1|2|auto → existing BGM_TRACKS
-// 3. classic-1
-// Missing file must silent-fallback (no throw); log once [arena:bgm-missing].
-```
+A boss stage plays the boss loop. Every other fight plays the courtyard loop. The title plays the title loop. All three are synthesized in `js/fern-score.js`.
 
-- Crossfade ~0.9s (same as today).
-- Preload next Path node theme on path-select focus (optional).
-- Intensity layers (mult-band ducking / stems) = post-MVP; single loop bed per level for v1.
-- Clear/win sting can stay SFX; optional short `audio/path/clear-sting.mp3` later.
+### Production pipeline
+
+The music in the game is that score. Recorded beds are not used.
 
 ### MVP theme roster (1:1 with 8 levels)
 
@@ -727,10 +716,7 @@ Chapter select idle beds (optional later): `chapter-1`, `chapter-2`.
 ### Production pipeline
 
 1. Lock briefs in `PATH_THEMES` (code) + this table.  
-2. Generate via Suno (or other) using `mood` / `sunoPrompt`; export MP3 ~90–150s seamless-ish loops.  
-3. Drop at `audio/path/<themeId>.mp3`; update `audio/meta.json` manifest entries.  
-4. No code change required if `src` paths stay stable — only assets.  
-5. Until files exist, Path uses classic fallbacks so CI/UAT never depends on assets.
+2. The playable music is the synthesized score in `js/fern-score.js`, not a generated recording.
 
 ### Shared base style (all Path beds)
 
@@ -739,9 +725,7 @@ Chapter select idle beds (optional later): `chapter-1`, `chapter-2`.
 ### Non-goals (audio MVP)
 
 - Full adaptive stem mixer  
-- Per-enemy leitmotifs  
-- Replacing Classic Neon Swarm pair  
-- Blocking Path ship on missing bespoke files
+- Per-enemy leitmotifs
 
 ---
 

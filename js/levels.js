@@ -677,11 +677,11 @@ export function getLevelTheme(levelOrId) {
   else if (bgm === 1) fb = 1;
   else fb = level.order % 2 === 0 ? 2 : 1;
   return {
-    id: fb === 1 ? "classic-1" : "classic-2",
-    title: fb === 1 ? "Neon Swarm A" : "Neon Swarm B",
-    src: fb === 1 ? "audio/neon-swarm-1.mp3" : "audio/neon-swarm-2.mp3",
+    id: "courtyard",
+    title: "Yard Rush",
+    src: "",
     fallback: /** @type {1|2} */ (fb),
-    mood: "Classic Neon Swarm fallback",
+    mood: "Courtyard battle loop",
   };
 }
 

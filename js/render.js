@@ -476,14 +476,19 @@ export function drawEnemies(ctx, enemies, t = 0) {
     }
     const sheet = sheetForEnemy(e);
     if (!sheet) continue;
-    drawClip(ctx, sheet, "idle", t + (e.phase || 0), e.x, e.y);
+    const blink = e.flash > 0 && ((Math.floor(t * 16) + (e.x | 0)) & 1) === 0;
+    drawClip(ctx, sheet, "idle", t + (e.phase || 0), e.x, e.y, blink ? { alpha: 0.25 } : undefined);
   }
 }
+
+/** Starburst row on fx.png. The sheet stays; these frames are not drawn. */
+export const COMIC_FX_KINDS = new Set(["hit"]);
 
 export function drawArtFx(ctx, list, t = 0) {
   const sheet = artBook()?.sheets?.fx;
   if (!ctx || !sheet || !list) return;
   for (const fx of list) {
+    if (!fx || COMIC_FX_KINDS.has(fx.kind)) continue;
     drawClip(ctx, sheet, fx.kind, fx.age != null ? fx.age : t, fx.x, fx.y);
   }
 }

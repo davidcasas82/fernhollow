@@ -77,20 +77,21 @@ Scoop **geoms** to raise multiplier. Death soft-resets mult (keeps a recovery se
 
 ## Soundtrack
 
-Suno-generated instrumental **Neon Swarm** (two variants):
+Original pulse, triangle, and noise music, synthesized in the game. Previews live in `docs/previews/audio/`.
 
-| File | When |
+| When | Loop |
 |------|------|
-| `audio/neon-swarm-1.mp3` | Levels **1, 3, 5…** |
-| `audio/neon-swarm-2.mp3` | Levels **2, 4, 6…** |
+| Title | Heroic |
+| A fight, including the courtyard | Driving, and the bass leads |
+| The boss stage | Heavier and faster |
 
-Heat ticks every **70s** of survival (see `LEVEL_DURATION_SEC`). Tracks crossfade without restarting; mute/`M` silences SFX + BGM.
+Effects (a swing, a hit, a foe popping, a pickup, a level-up, menu move and select, getting hurt, and the boss intro) sit quieter than the music. Mute with `M`.
 
 ## Stack
 
 - Vanilla HTML / CSS / JS (ES modules)
 - Canvas 2D rendering
-- Web Audio SFX + HTMLAudioElement BGM loops
+- Web Audio music and effects, synthesized from the score
 - LocalStorage for high score
 
 ## Dev / session handoff

@@ -241,7 +241,9 @@ function applyUiFocus(els, index) {
 
 function stepUiFocus(els, delta) {
   if (!els.length || !delta) return;
+  const prev = uiFocus;
   applyUiFocus(els, uiFocus + delta);
+  if (uiFocus !== prev) game?.audio?.menuMove?.();
 }
 
 function navDelta(nav) {
@@ -253,7 +255,9 @@ function navDelta(nav) {
 
 function clickFocused(els) {
   const el = els[uiFocus] || els[0];
-  el?.click();
+  if (!el) return;
+  game?.audio?.menuSelect?.();
+  el.click();
 }
 
 function titleTargets() {
@@ -285,9 +289,10 @@ function movePathFocus(delta) {
   if (!levels.length) return;
   const idx = Math.max(0, levels.findIndex((l) => l.id === pathFocusId));
   const n = levels[Math.max(0, Math.min(levels.length - 1, idx + delta))];
-  if (n) {
+  if (n && n.id !== pathFocusId) {
     pathFocusId = n.id;
     renderPathMap();
+    game?.audio?.menuMove?.();
   }
 }
 
@@ -328,6 +333,7 @@ function showTitleMenu() {
   overlay?.classList.remove("hidden");
   applyUiFocus(titleTargets(), 0);
   syncTouchChrome();
+  game?.audio?.playMenuTheme?.();
 }
 
 
@@ -718,7 +724,6 @@ function showPathResultUI(result) {
   if (fill) {
     const word = cleared ? "CLEAR" : "FAIL";
     fill.textContent = word;
-    fill.setAttribute("data-stamp", word);
   }
   pathResult?.classList.toggle("is-fail", !cleared);
   pathResult?.classList.toggle("is-clear", cleared);
@@ -1255,6 +1260,14 @@ function onPathConfirm() {
   }
 }
 
+overlay?.addEventListener("click", (e) => {
+  if (!e.target || typeof e.target.closest !== "function") return;
+  if (e.detail < 1) return;
+  const btn = e.target.closest("button");
+  if (!btn || !overlay.contains(btn)) return;
+  game?.audio?.menuSelect?.();
+});
+
 pathBtn?.addEventListener("click", () => showPathMap());
 pathBackBtn?.addEventListener("click", () => showTitleMenu());
 pathSelectBtn?.addEventListener("click", () => {
@@ -1332,23 +1345,26 @@ window.addEventListener("keydown", (e) => {
     if (e.code === "ArrowRight" || e.code === "ArrowDown") {
       e.preventDefault();
       const n = levels[Math.min(levels.length - 1, idx + 1)];
-      if (n) {
+      if (n && n.id !== pathFocusId) {
         pathFocusId = n.id;
         renderPathMap();
+        game?.audio?.menuMove?.();
       }
       return;
     }
     if (e.code === "ArrowLeft" || e.code === "ArrowUp") {
       e.preventDefault();
       const n = levels[Math.max(0, idx - 1)];
-      if (n) {
+      if (n && n.id !== pathFocusId) {
         pathFocusId = n.id;
         renderPathMap();
+        game?.audio?.menuMove?.();
       }
       return;
     }
     if (e.code === "Enter" || e.code === "Space") {
       e.preventDefault();
+      game?.audio?.menuSelect?.();
       onPathConfirm();
       return;
     }

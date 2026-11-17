@@ -288,6 +288,16 @@ export function updateEnemies(enemies, player, dt, elapsed = 0) {
   for (const e of enemies) {
     if (e.dead) continue;
 
+    if (e.flash > 0) e.flash = Math.max(0, e.flash - dt);
+    if (e.knockT > 0) {
+      e.x += (e.knockX || 0) * dt;
+      e.y += (e.knockY || 0) * dt;
+      e.knockT -= dt;
+      const damp = Math.exp(-12 * dt);
+      e.knockX *= damp;
+      e.knockY *= damp;
+    }
+
     // Outline telegraph then solidify (rate from GFX — Sektori-style spawn read)
     if (e.enter < 1) {
       const rate = GFX.ENEMY_ENTER_RATE ?? 2.6;

@@ -103,7 +103,7 @@ Sync `docs/LEVELS_DESIGN.md` in the same PR.
 Shipped:
 
 - Classic heat already continues `currentTime` (PR A side).
-- `playTheme` probes Path src, logs `[arena:bgm-missing]`, falls back to Neon Swarm.
+- `playTheme` selects the courtyard loop, or the boss loop for a boss stage.
 - Path `start({ skipBgm })` then one `playTheme` — no double-start.
 - Classic beds lazy-created with `preload=metadata`.
 - SFX through a compressor bus; shoot is every other shot at gain 0.012. Fire rate unchanged.
