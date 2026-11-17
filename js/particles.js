@@ -442,10 +442,13 @@ const room = particleCap() - this.particles.length;
   draw(ctx) {
     ctx.save();
     ctx.globalCompositeOperation = "source-over";
+    ctx.imageSmoothingEnabled = false;
 
     if (GFX.PIXEL_ART) {
       for (const p of this.particles) {
+        if (p.streak || p.attract) continue;
         const a = Math.max(0, p.life / p.maxLife);
+        if (a <= 0.04) continue;
         const s = Math.max(1, Math.round(p.size > 2 ? 2 : 1));
         ctx.globalAlpha = a;
         ctx.fillStyle = p.color;
@@ -545,14 +548,15 @@ const room = particleCap() - this.particles.length;
 
     ctx.restore();
 
-    // Plain pixel labels. No ink burst behind the glyphs.
     ctx.globalAlpha = 1;
     for (const f of this.floaters) {
       if (isComicWord(f.text)) continue;
       const a = Math.max(0, f.life / f.maxLife);
+      if (a <= 0) continue;
       const scale = Math.max(1, Math.round((f.scale || 1) * 2));
       const label = String(f.text).replace(/×/g, "X").replace(/→/g, "-");
       ctx.save();
+      ctx.imageSmoothingEnabled = false;
       ctx.translate(f.x | 0, f.y | 0);
       ctx.globalAlpha = a;
       const w = textWidth(label, scale);

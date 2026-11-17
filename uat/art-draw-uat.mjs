@@ -273,4 +273,95 @@ const cursorDraw = assertUi("cursor");
 assert.equal(cursorDraw[0][2], book.ui.cells.cursor.sx);
 assert.equal(cursorDraw[0][3], book.ui.cells.cursor.sy);
 
+ctx.calls.length = 0;
+drawPlayer(
+  ctx,
+  { x: 400, y: 500, vx: 0, vy: 0, angle: 0, fireCd: 0, r: 13, invuln: 0, hurt: 0.1, face: "down" },
+  0
+);
+draws = assertSprites(ctx, "ryan hurt");
+assert.equal(draws[0][1].__artFile, "ryan-extra.png");
+assert.equal(draws[0][2], 0);
+assert.equal(draws[0][3], 0);
+
+ctx.calls.length = 0;
+drawPlayer(
+  ctx,
+  { x: 400, y: 500, vx: 0, vy: 0, angle: 0, fireCd: 0, r: 13, invuln: 0, deathAge: 0, face: "right" },
+  0
+);
+draws = assertSprites(ctx, "ryan death");
+assert.equal(draws[0][1].__artFile, "ryan-extra.png");
+assert.equal(draws[0][2], 0);
+assert.equal(draws[0][3], 384);
+
+const extras = [
+  ["wanderer", "puffling-extra.png", 112, 168],
+  ["diamond", "thistle-jay-extra.png", 128, 192],
+  ["pink", "fern-hare-extra.png", 112, 168],
+  ["spinner", "acorn-spinner-extra.png", 112, 168],
+  ["splitter", "split-sprout-extra.png", 128, 192],
+  ["splitterChild", "sprout-bud-extra.png", 80, 120],
+  ["tank", "moss-turtle-extra.png", 160, 240],
+  ["void", "gust-bloom-extra.png", 112, 168],
+  ["atom", "pollen-puff-extra.png", 56, 84],
+];
+for (const [type, file, hurtX, deathX] of extras) {
+  ctx.calls.length = 0;
+  drawEnemies(ctx, [{ type, x: 500, y: 500, dead: false, phase: 0, enter: 1, attack: 0.2, attackT: 0 }], 0);
+  draws = assertSprites(ctx, `${type} attack`);
+  assert.equal(draws[0][1].__artFile, file, type);
+  assert.equal(draws[0][2], 0);
+  assert.equal(draws[0][3], 0);
+
+  ctx.calls.length = 0;
+  drawEnemies(ctx, [{ type, x: 500, y: 500, dead: false, phase: 0, enter: 1, hurt: 0.1 }], 0);
+  draws = assertSprites(ctx, `${type} hurt`);
+  assert.equal(draws[0][1].__artFile, file);
+  assert.equal(draws[0][2], hurtX);
+
+  ctx.calls.length = 0;
+  drawEnemies(ctx, [{ type, x: 500, y: 500, dead: true, phase: 0, enter: 1, deathAge: 0 }], 0);
+  draws = assertSprites(ctx, `${type} death`);
+  assert.equal(draws[0][1].__artFile, file);
+  assert.equal(draws[0][2], deathX);
+  assert.equal(draws[0][3], 0);
+}
+
+ctx.calls.length = 0;
+drawEnemies(
+  ctx,
+  [
+    {
+      type: "snake",
+      x: 600,
+      y: 500,
+      r: 10,
+      dead: false,
+      enter: 1,
+      phase: 0,
+      attack: 0.2,
+      attackT: 0,
+      segCount: 2,
+      spacing: 1,
+      history: [{ x: 580, y: 500 }],
+    },
+  ],
+  0
+);
+draws = assertSprites(ctx, "ivy attack");
+const ivy = new Set(draws.map((c) => c[1].__artFile));
+assert.ok(ivy.has("ivy-wisp-extra.png"), "wisp attack");
+assert.ok(ivy.has("ivy-segment-extra.png"), "segment attack");
+
+ctx.calls.length = 0;
+drawEnemies(
+  ctx,
+  [{ type: "tank", pathBoss: true, x: 700, y: 500, dead: true, phase: 0, enter: 1, deathAge: 0 }],
+  0
+);
+draws = assertSprites(ctx, "moss giant death");
+assert.equal(draws[0][1].__artFile, "moss-giant-extra.png");
+assert.equal(draws[0][2], 384);
+
 console.log("art-draw-uat: sprites come from the atlas");

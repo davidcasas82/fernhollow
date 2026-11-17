@@ -49,8 +49,8 @@ export const CAM = {
    * death, elites) can still punch through toward MAX_TRAUMA.
    */
   COMBAT_TRAUMA_SOFT_CAP: 0.42,
-  /** Max shake offset in world px at trauma=1 (was 28 — too wild when sustained). */
-  SHAKE_MAX: 16,
+  /** Max shake offset in world px at trauma=1. Kept small so pixels stay readable. */
+  SHAKE_MAX: 6,
   /** Rotation amplitude scale at trauma=1 (radians factor). */
   SHAKE_ROT: 0.007,
   /** Fire recoil kick strength */
@@ -68,6 +68,11 @@ export function createCamera(worldW = WORLD_W, worldH = WORLD_H) {
     kickY: 0,
     zoomPunch: 0,
     time: 0,
+    impulse: 0,
+    panX: 0,
+    panY: 0,
+    shakeX: 0,
+    shakeY: 0,
     worldW,
     worldH,
   };
@@ -84,6 +89,11 @@ export function resetCamera(cam, worldW = WORLD_W, worldH = WORLD_H) {
   cam.kickY = 0;
   cam.zoomPunch = 0;
   cam.time = 0;
+  cam.impulse = 0;
+  cam.panX = 0;
+  cam.panY = 0;
+  cam.shakeX = 0;
+  cam.shakeY = 0;
 }
 
 function camWorld(cam, view) {
@@ -117,6 +127,12 @@ export function addTrauma(cam, amount, opts = {}) {
   a *= 0.3 + 0.7 * head * head;
 
   cam.trauma = Math.min(CAM.MAX_TRAUMA, cam.trauma + a);
+}
+
+/** Small extra shake in world pixels. Decays on its own. */
+export function addShake(cam, px) {
+  if (!cam || !(px > 0)) return;
+  cam.impulse = Math.min(5, (cam.impulse || 0) + px);
 }
 
 /** Brief zoom punch — positive = zoom in. */
@@ -238,6 +254,15 @@ export function updateCamera(cam, player, aim, dt, view = null) {
 
   // Trauma decay
   cam.trauma = Math.max(0, cam.trauma - CAM.TRAUMA_DECAY * dt);
+  cam.impulse = Math.max(0, (cam.impulse || 0) - dt * 14);
+
+  // A few pixels of look, eased. The whole courtyard stays in frame.
+  const panTX = Math.max(-6, Math.min(6, (player.vx || 0) * 0.015));
+  const panTY = Math.max(-5, Math.min(5, (player.vy || 0) * 0.015));
+  const pk = 1 - Math.exp(-5 * dt);
+  cam.panX = (cam.panX || 0) + (panTX - (cam.panX || 0)) * pk;
+  cam.panY = (cam.panY || 0) + (panTY - (cam.panY || 0)) * pk;
+  easeShake(cam, dt);
 
   // Final hard clamp after lerp/zoom settle — ship must stay visible
   {
@@ -249,9 +274,19 @@ export function updateCamera(cam, player, aim, dt, view = null) {
   }
 }
 
+function easeShake(cam, dt) {
+  const raw = cameraShakeOffset(cam);
+  const ix = raw.x + (cam.impulse || 0) * Math.sin(cam.time * 47) + (cam.panX || 0);
+  const iy = raw.y + (cam.impulse || 0) * Math.cos(cam.time * 41) + (cam.panY || 0);
+  const sk = 1 - Math.exp(-16 * dt);
+  cam.shakeX = (cam.shakeX || 0) + (ix - (cam.shakeX || 0)) * sk;
+  cam.shakeY = (cam.shakeY || 0) + (iy - (cam.shakeY || 0)) * sk;
+}
+
 /**
  * Multi-frequency shake offset from trauma (not pure white noise).
- * Returns {x, y, rot} in world pixels / radians.
+ * Returns {x, y, rot} in world pixels / radians. Rotation is not applied;
+ * the view only translates by whole pixels.
  */
 export function cameraShakeOffset(cam) {
   const t = Math.min(1, cam.trauma);
@@ -275,10 +310,12 @@ export function cameraShakeOffset(cam) {
   return { x, y, rot };
 }
 
-/** Frame the full world. Device pixel scale stays an integer so atlas pixels stay square. */
-export function applyCameraTransform(ctx, _cam, dpr = 1) {
+/** Frame the full world. Device pixel scale and shake stay integers so atlas pixels stay square. */
+export function applyCameraTransform(ctx, cam, dpr = 1) {
   const d = Number.isInteger(dpr) && dpr >= 1 ? dpr : 1;
-  ctx.setTransform(d, 0, 0, d, 0, 0);
+  const ox = Math.round(cam?.shakeX || 0);
+  const oy = Math.round(cam?.shakeY || 0);
+  ctx.setTransform(d, 0, 0, d, ox * d, oy * d);
   ctx.imageSmoothingEnabled = false;
 }
 
@@ -297,4 +334,8 @@ export function updateMenuCamera(cam, dt, worldW = WORLD_W, worldH = WORLD_H) {
   const tz = CAM.BASE_ZOOM + Math.sin(cam.time * 0.5) * 0.02;
   cam.zoom += (tz - cam.zoom) * k;
   cam.trauma = Math.max(0, cam.trauma - dt);
+  const driftX = Math.sin(cam.time * 0.35) * 4;
+  const driftY = Math.cos(cam.time * 0.28) * 3;
+  cam.shakeX = (cam.shakeX || 0) + (driftX - (cam.shakeX || 0)) * k;
+  cam.shakeY = (cam.shakeY || 0) + (driftY - (cam.shakeY || 0)) * k;
 }
