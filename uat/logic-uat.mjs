@@ -94,6 +94,7 @@ const {
   updatePlayer,
   createBullet,
   ryanHandPoint,
+  RYAN_WALK_HAND,
   updateBullets,
   spawnEnemy,
   pickSpawnType,
@@ -251,13 +252,51 @@ test("muzzle and bolt spawn at the v7 hand for each facing", () => {
     const hand = ryanHandPoint(origin.x, origin.y, dir);
     assert.equal(hand.x, point.x, `${dir} x`);
     assert.equal(hand.y, point.y, `${dir} y`);
-    const bolt = createBullet(hand.x, hand.y, angle[dir], { atPoint: true });
+    const bolt = createBullet(hand.x, hand.y, angle[dir]);
     assert.equal(bolt.x, hand.x, `${dir} bolt x`);
     assert.equal(bolt.y, hand.y, `${dir} bolt y`);
   }
   const down = ryanHandPoint(origin.x, origin.y, "down");
   assert.ok(down.x > origin.x + 20, "down hand is on screen right");
   assert.ok(Math.abs(down.y - origin.y) < 12, "down hand is not on the belly");
+
+  const walk = {
+    down: [
+      { x: 430, y: 496 },
+      { x: 430, y: 497 },
+      { x: 430, y: 496 },
+      { x: 430, y: 497 },
+    ],
+    up: [
+      { x: 417, y: 477 },
+      { x: 417, y: 478 },
+      { x: 417, y: 477 },
+      { x: 417, y: 478 },
+    ],
+    left: [
+      { x: 378, y: 499 },
+      { x: 378, y: 498 },
+      { x: 378, y: 499 },
+      { x: 378, y: 498 },
+    ],
+    right: [
+      { x: 423, y: 501 },
+      { x: 423, y: 500 },
+      { x: 423, y: 501 },
+      { x: 423, y: 500 },
+    ],
+  };
+  for (const [dir, frames] of Object.entries(walk)) {
+    assert.equal(RYAN_WALK_HAND[dir].length, 4, dir);
+    for (let i = 0; i < 4; i++) {
+      const hand = ryanHandPoint(origin.x, origin.y, dir, i);
+      assert.equal(hand.x, frames[i].x, `${dir} walkshoot ${i} x`);
+      assert.equal(hand.y, frames[i].y, `${dir} walkshoot ${i} y`);
+      const bolt = createBullet(hand.x, hand.y, angle[dir]);
+      assert.equal(bolt.x, hand.x, `${dir} walk bolt ${i} x`);
+      assert.equal(bolt.y, hand.y, `${dir} walk bolt ${i} y`);
+    }
+  }
 });
 
 // --- Combat / entities ---
