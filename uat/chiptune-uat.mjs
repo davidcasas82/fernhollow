@@ -1,5 +1,5 @@
 /**
- * Chiptune pack: original loops, quieter effects, and the default stays Neon Swarm.
+ * Chiptune pack: the game plays these loops and the quieter effects.
  * Run: node uat/chiptune-uat.mjs
  */
 
@@ -11,7 +11,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const js = (name) => pathToFileURL(path.join(root, "js", name)).href;
 
-const { FERN_CHIPTUNE, BGM_TRACKS } = await import(js("constants.js"));
 const { AudioBus } = await import(js("audio.js"));
 const { TRACKS, SFX, SFX_REEL_CUES, sfxReelPlan, fernBattleId, trackSeconds } = await import(
   js("fern-score.js")
@@ -63,16 +62,17 @@ function melodyKey(events) {
   return events.map((ev) => ev.midi).join(",");
 }
 
-test("Neon Swarm stays the default", () => {
-  assert.equal(FERN_CHIPTUNE, false);
-  assert.deepEqual(BGM_TRACKS, ["audio/neon-swarm-1.mp3", "audio/neon-swarm-2.mp3"]);
+test("the chiptune is what the game plays", () => {
+  assert.equal(fs.existsSync(path.join(root, "audio", "neon-swarm-1.mp3")), false);
+  assert.equal(fs.existsSync(path.join(root, "audio", "neon-swarm-2.mp3")), false);
+  assert.equal(fs.existsSync(path.join(root, "audio", "meta.json")), false);
   const bus = new AudioBus();
-  assert.equal(bus.chiptune, null);
+  assert.ok(bus.chiptune);
   bus.playMenuTheme();
   bus.menuMove();
   bus.menuSelect();
   bus.bossIntro();
-  assert.equal(bus.chiptune, null);
+  assert.equal(bus.chiptune.currentId, "title");
 });
 
 test("boss theme maps to the boss loop and other beds to courtyard", () => {

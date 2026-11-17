@@ -1,6 +1,5 @@
 /**
- * Plays the Fernhollow chiptune through an AudioContext the bus already owns.
- * Constructed only when the chiptune switch is on.
+ * Plays the Fernhollow score through an AudioContext the bus already owns.
  */
 
 import { SFX, TRACKS } from "./fern-score.js";
@@ -60,9 +59,13 @@ export class FernPlayer {
       return;
     }
     const ctx = this._ctx();
-    if (!ctx) return;
+    if (!ctx) {
+      this.currentId = id;
+      this.paused = true;
+      this.offset = restart ? 0 : this.offset;
+      return;
+    }
     if (this.currentId === id && this.source && !restart && !this.paused) return;
-    this.bus._silenceHtml?.();
     const buf = this._buffer(ctx, this.buffers, id, TRACKS[id]);
     const offset = restart ? 0 : this.offset % buf.duration;
     this._start(ctx, buf, offset);

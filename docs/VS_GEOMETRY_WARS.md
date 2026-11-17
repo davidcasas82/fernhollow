@@ -35,7 +35,7 @@ It does **not** mean we feel like Bizarre Creations’ game.
 | Bomb as clutch tool | **8.0** | 10 | −2 | Clear + **SAVED ×N** + geom vacuum |
 | Respawn / mercy | **8.0** | 10 | −2 | Grace, clear, knockback, safe pocket |
 | Camera dynamics | **7.5** | 10 | −2.5 | Follow, look-ahead, trauma, zoom punch |
-| Audio identity | **6.5** | 10 | −3.5 | Neon Swarm BGM + SFX; not a full GW OST suite |
+| Audio identity | **6.5** | 10 | −3.5 | Synthesized title, courtyard, and boss loops plus quieter effects |
 | One-more-run loop | **8.0** | 10 | −2 | Clear bonus + vacuum + mult risk |
 | Laptop controls | **8.0** | 8* | 0 | Trackpad twin-stick is solid |
 

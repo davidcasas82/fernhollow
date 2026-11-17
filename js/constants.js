@@ -600,16 +600,7 @@ export const SPAWN_LATE_WEIGHTS = Object.freeze({
 
 export const HS_KEY = "geometry-arena-highscore";
 
-/** Heat / BGM cadence (unstick from ~50s pincer intro) */
+/** Heat cadence (unstick from ~50s pincer intro). Music does not change with it. */
 export const LEVEL_DURATION_SEC = 70;
-export const BGM_TRACKS = [
-  "audio/neon-swarm-1.mp3",
-  "audio/neon-swarm-2.mp3",
-];
+/** Master level for the synthesized loops. */
 export const BGM_VOLUME = 0.38;
-
-/**
- * Original chiptune in js/fern-score.js (title, courtyard, boss, quieter effects).
- * Leave this false so the game keeps playing Neon Swarm until the previews are approved.
- */
-export const FERN_CHIPTUNE = false;

@@ -89,6 +89,7 @@ globalThis.window = {
     constructor() {
       this.state = "running";
       this.currentTime = 0;
+      this.sampleRate = 8000;
       this.destination = {};
     }
     createOscillator() {
@@ -102,8 +103,36 @@ globalThis.window = {
     }
     createGain() {
       return {
-        gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} },
+        gain: {
+          value: 1,
+          setValueAtTime() {},
+          linearRampToValueAtTime() {},
+          exponentialRampToValueAtTime() {},
+          cancelScheduledValues() {},
+        },
         connect() {},
+      };
+    }
+    createBuffer(_channels, length) {
+      const data = [new Float32Array(length), new Float32Array(length)];
+      return {
+        duration: length / this.sampleRate,
+        getChannelData(i) {
+          return data[i];
+        },
+        copyToChannel(src, i) {
+          data[i].set(src.subarray(0, data[i].length));
+        },
+      };
+    }
+    createBufferSource() {
+      return {
+        buffer: null,
+        loop: false,
+        playbackRate: { value: 1 },
+        connect() {},
+        start() {},
+        stop() {},
       };
     }
     resume() {

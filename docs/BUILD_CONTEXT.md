@@ -77,11 +77,8 @@ geometry-arena/
   styles.css          # layout, HUD, splash, title menu, arcade buttons
   package.json
   README.md           # player-facing; may lag constants
-  audio/
-    neon-swarm-1.mp3  # odd levels (1,3,5…)
-    neon-swarm-2.mp3  # even levels
-    meta.json
   docs/
+    previews/audio/   # title, courtyard, boss, and effects previews
     BUILD_CONTEXT.md  # this file
     GAMEPLAY_TUNING_RESEARCH.md
     VS_GEOMETRY_WARS.md
@@ -129,7 +126,7 @@ js/
 | **Classic** | Title **PLAY** → `game.start()` | Endless Evolved; never star-gated |
 | **Arena Path** | Title **PATH** → map → brief → `game.startLevel(id)` | 8 authored levels, stars, topologies |
 
-Path catalog/contracts: `docs/LEVELS_DESIGN.md`, `js/levels.js`, `js/modes.js`, `js/arenas.js`, `js/progress.js`. Bespoke BGM themes via `PATH_THEMES` / `rules.themeId` (MP3s optional; Neon Swarm fallback).
+Path catalog/contracts: `docs/LEVELS_DESIGN.md`, `js/levels.js`, `js/modes.js`, `js/arenas.js`, `js/progress.js`. A fight plays the courtyard loop; a boss stage plays the boss loop.
 
 Core loop in `Game._loop` (`js/game.js`): update only while `playing`; menu still draws ambient grid pulses / particles / menu camera.
 
@@ -203,7 +200,7 @@ Core loop in `Game._loop` (`js/game.js`): update only while `playing`; menu stil
 - **Touch / mobile:** dual virtual sticks (left move, right aim+auto-fire), BOMB/PAUSE fabs; gated by coarse pointer or narrow+touch — desktop unchanged (`input.bindTouchControls`, `body.touch-ui`)
 - **Splash dismiss:** iris `clip-path` wipe + scanline drift + `audio.splashDismiss()` sting (same user gesture unlocks AudioContext)
 - **Title ambient:** geom rain drifts on menu; PLAY fires `_playShipIntro` thruster burst
-- **BGM:** Suno “Neon Swarm” variants; alternate by level parity via `playLevelTheme(level)`
+- **BGM:** synthesized title, courtyard, and boss loops (`js/fern-score.js`). A fight uses the courtyard loop; the boss stage uses the boss loop.
 
 ---
 

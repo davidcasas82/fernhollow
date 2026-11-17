@@ -1,6 +1,6 @@
 # Chiptune previews
 
-Original music and effects for Fernhollow, written as note data and synthesized in the game. These files are for listening. The game still plays Neon Swarm until `FERN_CHIPTUNE` in `js/constants.js` is turned on.
+Original music and effects for Fernhollow, written as note data and synthesized in the game. These files are what the game plays.
 
 | File | What |
 |------|------|
