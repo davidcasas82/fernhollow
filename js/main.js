@@ -1,9 +1,10 @@
-import { loadArt } from "./art.js";
+import { artBook, loadArt } from "./art.js";
 import { Game } from "./game.js";
 import { mountTitleScreen } from "./title-screen.js";
 import {
   applyGfxQuality,
   GFX,
+  MAX_LIVES,
   MULT_FOR_DUAL,
   MULT_FOR_TRIPLE,
   preferMobileGraphics,
@@ -38,8 +39,28 @@ const resumeBtn = document.getElementById("resume-btn");
 const pauseBtn = document.getElementById("pause-btn");
 const muteBtn = document.getElementById("mute-btn");
 const helpBtn = document.getElementById("help-btn");
+const settingsBtn = document.getElementById("settings-btn");
+const upgradesBtn = document.getElementById("upgrades-btn");
+const creditsBtn = document.getElementById("credits-btn");
 const panelHelpBtn = document.getElementById("panel-help-btn");
 const panelMuteBtn = document.getElementById("panel-mute-btn");
+const pauseOptionsBtn = document.getElementById("pause-options-btn");
+const settingsScreen = document.getElementById("settings-screen");
+const helpScreen = document.getElementById("help-screen");
+const upgradesScreen = document.getElementById("upgrades-screen");
+const creditsScreen = document.getElementById("credits-screen");
+const settingsMuteBtn = document.getElementById("settings-mute-btn");
+const settingsBackBtn = document.getElementById("settings-back-btn");
+const helpBackBtn = document.getElementById("help-back-btn");
+const upgradesBackBtn = document.getElementById("upgrades-back-btn");
+const creditsBackBtn = document.getElementById("credits-back-btn");
+const loadingScreen = document.getElementById("loading");
+const waveBanner = document.getElementById("wave-banner");
+const waveBannerText = document.getElementById("wave-banner-text");
+const waveBannerKicker = document.getElementById("wave-banner-kicker");
+const healthBar = document.getElementById("health-bar");
+const xpBar = document.getElementById("xp-bar");
+const blessingBlurb = document.getElementById("blessing-blurb");
 const scoreEl = document.getElementById("score");
 const levelEl = document.getElementById("level");
 const multEl = document.getElementById("mult");
@@ -137,6 +158,21 @@ let game = null;
 let helpOpen = false;
 let panelHelpOpen = false;
 let uiFocus = 0;
+let screenReturn = "title";
+let bannerTimer = 0;
+
+const KINGDOM_SCREENS = {
+  settings: settingsScreen,
+  help: helpScreen,
+  upgrades: upgradesScreen,
+  credits: creditsScreen,
+};
+
+const BLESSING_COPY = {
+  sun: "Sunseed. One bright bolt while the multiplier is young.",
+  twin: "Twin. At ×45 the sun-bolts fly in a pair.",
+  triple: "Triple. At ×110 three bolts leave Ryan's hand.",
+};
 
 /** Same device class as low GFX — iPadOS included. Wide hover laptops stay mouse. */
 function preferTouchUI() {
@@ -200,9 +236,24 @@ function setOverlayMode(mode) {
     "mode-gameover",
     "mode-path",
     "mode-brief",
-    "mode-path-result"
+    "mode-path-result",
+    "mode-settings",
+    "mode-help",
+    "mode-upgrades",
+    "mode-credits"
   );
-  const known = ["title", "panel", "gameover", "path", "brief", "path-result"];
+  const known = [
+    "title",
+    "panel",
+    "gameover",
+    "path",
+    "brief",
+    "path-result",
+    "settings",
+    "help",
+    "upgrades",
+    "credits",
+  ];
   if (known.includes(mode)) overlay.classList.add(`mode-${mode}`);
 
   titleMenu?.classList.toggle("hidden", mode !== "title");
@@ -211,6 +262,9 @@ function setOverlayMode(mode) {
   pathMap?.classList.toggle("hidden", mode !== "path");
   pathBrief?.classList.toggle("hidden", mode !== "brief");
   pathResult?.classList.toggle("hidden", mode !== "path-result");
+  for (const [name, el] of Object.entries(KINGDOM_SCREENS)) {
+    el?.classList.toggle("hidden", mode !== name);
+  }
 
   if (mode !== "gameover" && gameoverMenu) gameoverMenu.classList.remove("entering");
   if (mode !== "title" && titleMenu) titleMenu.classList.remove("entering");
@@ -261,11 +315,39 @@ function clickFocused(els) {
 }
 
 function titleTargets() {
-  return visibleEls([startBtn, pathBtn, helpBtn]);
+  return visibleEls([startBtn, pathBtn, settingsBtn, upgradesBtn, helpBtn, creditsBtn]);
 }
 
 function pauseTargets() {
-  return visibleEls([interruptBtn, resumeBtn, titleBtn, panelHelpBtn, panelMuteBtn]);
+  return visibleEls([
+    interruptBtn,
+    resumeBtn,
+    titleBtn,
+    pauseOptionsBtn,
+    panelHelpBtn,
+    panelMuteBtn,
+  ]);
+}
+
+function kingdomTargets(mode) {
+  if (mode === "settings") return visibleEls([settingsMuteBtn, settingsBackBtn]);
+  if (mode === "help") return visibleEls([helpBackBtn]);
+  if (mode === "credits") return visibleEls([creditsBackBtn]);
+  if (mode === "upgrades") {
+    return visibleEls([
+      ...document.querySelectorAll("#upgrades-screen .blessing"),
+      upgradesBackBtn,
+    ]);
+  }
+  return [];
+}
+
+function activeKingdomMode() {
+  if (!overlay) return "";
+  for (const name of Object.keys(KINGDOM_SCREENS)) {
+    if (overlay.classList.contains(`mode-${name}`)) return name;
+  }
+  return "";
 }
 
 function gameoverTargets() {
@@ -298,11 +380,101 @@ function movePathFocus(delta) {
 
 function syncPanelMute() {
   const on = game?.audio?.enabled !== false;
-  if (panelMuteBtn) panelMuteBtn.textContent = on ? "SOUND ON" : "MUTED";
+  const label = on ? "SOUND ON" : "MUTED";
+  if (panelMuteBtn) panelMuteBtn.textContent = label;
+  if (settingsMuteBtn) settingsMuteBtn.textContent = label;
+}
+
+function paintFxChips() {
+  const sheet = artBook()?.sheets?.fx;
+  if (!sheet?.image) return;
+  const map = {
+    sunseed: ["sunseed", 0, 16, 16],
+    bolt: ["bolt", 0, 24, 16],
+    spark: ["hud", 2, 16, 16],
+    heart: ["hud", 0, 16, 16],
+    apple: ["hud", 1, 16, 16],
+  };
+  document.querySelectorAll(".fx-chip").forEach((canvas) => {
+    const spec = map[canvas.dataset.fx];
+    if (!spec) return;
+    const frame = sheet.clips[spec[0]]?.frames?.[spec[1]];
+    if (!frame) return;
+    const iw = spec[2];
+    const ih = spec[3];
+    const scale = 2;
+    const sx = frame.sx + Math.round((frame.sw - iw) / 2);
+    const sy = frame.sy + Math.round((frame.sh - ih) / 2);
+    canvas.width = iw * scale;
+    canvas.height = ih * scale;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(sheet.image, sx, sy, iw, ih, 0, 0, iw * scale, ih * scale);
+  });
+}
+
+function showWaveBanner(text, kicker = "The siege", hold = false) {
+  if (!waveBanner || !waveBannerText) return;
+  if (waveBannerKicker) waveBannerKicker.textContent = kicker;
+  waveBannerText.textContent = text;
+  waveBanner.classList.remove("hidden");
+  if (bannerTimer) clearTimeout(bannerTimer);
+  bannerTimer = 0;
+  if (!hold) {
+    bannerTimer = setTimeout(() => {
+      waveBanner.classList.add("hidden");
+      bannerTimer = 0;
+    }, 2200);
+  }
+}
+
+function hideWaveBanner() {
+  if (bannerTimer) clearTimeout(bannerTimer);
+  bannerTimer = 0;
+  waveBanner?.classList.add("hidden");
+}
+
+function focusBlessing(name) {
+  const cards = document.querySelectorAll("#upgrades-screen .blessing");
+  cards.forEach((card) => {
+    card.classList.toggle("is-focused", card.dataset.blessing === name);
+  });
+  if (blessingBlurb && BLESSING_COPY[name]) blessingBlurb.textContent = BLESSING_COPY[name];
+}
+
+function openKingdom(mode) {
+  screenReturn = game?.state === "paused" ? "panel" : "title";
+  if (mode === "upgrades") {
+    focusBlessing("sun");
+    paintFxChips();
+  }
+  syncPanelMute();
+  setOverlayMode(mode);
+  overlay?.classList.remove("hidden");
+  if (screenReturn !== "panel") document.body.classList.add("pixel-title");
+  applyUiFocus(kingdomTargets(mode), 0);
+}
+
+function closeKingdom() {
+  if (screenReturn === "panel" && game?.state === "paused") {
+    setOverlayMode("panel");
+    overlay?.classList.remove("hidden");
+    applyUiFocus(pauseTargets(), 0);
+    return;
+  }
+  showTitleMenu();
+}
+
+function hideLoading() {
+  loadingScreen?.classList.add("hidden");
 }
 
 /** Live-grid title menu (post-splash / return to menu). */
 function showTitleMenu() {
+  window.__showPressStart = false;
+  window.__holdPrompt = false;
   pendingAction = null;
   titleAction = null;
   pathPrimaryAction = null;
@@ -312,7 +484,6 @@ function showTitleMenu() {
   stopPathHudPoll();
   helpOpen = false;
   howTo?.classList.add("hidden");
-  if (helpBtn) helpBtn.textContent = "How to play";
   resetPanelHelp();
   titleBtn?.classList.add("hidden");
   resumeBtn?.classList.add("hidden");
@@ -335,7 +506,6 @@ function showTitleMenu() {
   syncTouchChrome();
   game?.audio?.playMenuTheme?.();
 }
-
 
 function starGlyphs(n) {
   const s = Math.max(0, Math.min(3, n | 0));
@@ -716,18 +886,23 @@ function showPathResultUI(result) {
 
   shellView = "result";
   pathPrimaryAction = null;
+  hideWaveBanner();
   document.body.classList.remove("path-run");
   setPathHudVisible(false);
   pathObjStat?.classList.remove("hot");
 
   const fill = pathResultWord?.querySelector?.(".path-result-fill") || pathResultWord;
   if (fill) {
-    const word = cleared ? "CLEAR" : "FAIL";
+    const word = cleared ? "VICTORY" : "NOT YET";
     fill.textContent = word;
   }
   pathResult?.classList.toggle("is-fail", !cleared);
   pathResult?.classList.toggle("is-clear", cleared);
-  if (pathResultTag) pathResultTag.textContent = (level?.name || "PATH").toUpperCase();
+  if (pathResultTag) {
+    pathResultTag.textContent = cleared
+      ? "The crown shines"
+      : level?.name || "The courtyard waits";
+  }
   if (prScore) prScore.textContent = format(score);
   if (prStars) prStars.textContent = String(stars);
   if (prTime) prTime.textContent = `${Math.round(elapsed)}s`;
@@ -809,6 +984,15 @@ const ui = {
     multEl.parentElement?.classList.toggle("hot", n >= 10);
     multEl.parentElement?.classList.toggle("blazing", n >= 40);
     this.updateGun?.(n);
+    if (xpBar) {
+      const m = Math.max(1, Math.floor(n || 1));
+      let frac = 1;
+      if (m < MULT_FOR_DUAL) frac = m / MULT_FOR_DUAL;
+      else if (m < MULT_FOR_TRIPLE) {
+        frac = (m - MULT_FOR_DUAL) / (MULT_FOR_TRIPLE - MULT_FOR_DUAL);
+      }
+      xpBar.style.width = `${Math.max(2, Math.round(Math.min(1, frac) * 100))}%`;
+    }
   },
   updateGun(n) {
     if (!gunLabelEl) return;
@@ -825,6 +1009,10 @@ const ui = {
   },
   updateLives(n) {
     livesEl.textContent = String(n);
+    if (healthBar) {
+      const frac = Math.max(0, Math.min(1, Number(n) / MAX_LIVES));
+      healthBar.style.width = `${Math.round(frac * 100)}%`;
+    }
   },
   updateBombs(n) {
     if (bombsEl) bombsEl.textContent = String(n);
@@ -880,6 +1068,7 @@ if (level && pathObjectiveEl) {
   hideOverlay() {
     overlay.classList.add("hidden");
     splash?.classList.add("hidden");
+    hideWaveBanner();
     document.body.classList.remove("pixel-title");
     howTo?.classList.add("hidden");
     helpOpen = false;
@@ -908,6 +1097,7 @@ if (level && pathObjectiveEl) {
     opts = {}
   ) {
     pendingAction = onPrimary;
+    hideWaveBanner();
     titleAction = typeof opts.onTitle === "function" ? opts.onTitle : null;
     if (overlayTitle) overlayTitle.textContent = title;
     if (overlayMessage) {
@@ -987,7 +1177,7 @@ if (level && pathObjectiveEl) {
     if (goMetaEl) {
       const deaths = data.deaths ?? 0;
       const level = data.level ?? 1;
-      const bits = [`HEAT ${level}`, `${deaths} DEATH${deaths === 1 ? "" : "S"}`];
+      const bits = [`WAVE ${level}`, `${deaths} BUMP${deaths === 1 ? "" : "S"}`];
       if (data.autopsy) bits.push(data.autopsy);
       goMetaEl.textContent = bits.join("  ·  ");
     }
@@ -1003,6 +1193,7 @@ if (level && pathObjectiveEl) {
     }
 
     howTo?.classList.add("hidden");
+    hideWaveBanner();
     resetPanelHelp();
     titleBtn?.classList.add("hidden");
     resumeBtn?.classList.add("hidden");
@@ -1023,6 +1214,9 @@ if (level && pathObjectiveEl) {
   setMuteLabel(on) {
     muteBtn.textContent = on ? "Sound" : "Muted";
     syncPanelMute();
+  },
+  showBanner(text, kicker, hold) {
+    showWaveBanner(text, kicker, hold);
   },
 };
 
@@ -1056,12 +1250,17 @@ if (splash) {
   showTitleMenu();
 }
 
-await loadArt();
+try {
+  await loadArt();
+} finally {
+  hideLoading();
+}
 mountTitleScreen(document.getElementById("title-canvas"));
+paintFxChips();
 
 /** Assigned after UI helpers so splash dismiss can safely optional-chain audio. */
 game = new Game(canvas, ui);
-window.__geometryArena = game;
+window.__fernhollow = game;
 window.__arenaRuns = () => dumpRunsToConsole();
 window.__arenaRecent = () => getRecentRuns(10);
 window.__arenaDeaths = () => getRecentDeaths(20);
@@ -1122,7 +1321,13 @@ function gamepadUiTick() {
   const back = input.consumeMenuBack();
   const confirm = input.consumeMenuConfirm();
 
-  if (overlayOn && overlay.classList.contains("mode-title")) {
+  const kingdomMode = activeKingdomMode();
+  if (overlayOn && kingdomMode) {
+    const els = kingdomTargets(kingdomMode);
+    stepUiFocus(els, navDelta(nav));
+    if (confirm) clickFocused(els);
+    if (back) closeKingdom();
+  } else if (overlayOn && overlay.classList.contains("mode-title")) {
     const els = titleTargets();
     stepUiFocus(els, navDelta(nav));
     if (confirm) clickFocused(els);
@@ -1224,16 +1429,64 @@ muteBtn?.addEventListener("click", () => {
 
 helpBtn?.addEventListener("click", (e) => {
   e.stopPropagation();
-  helpOpen = !helpOpen;
-  howTo?.classList.toggle("hidden", !helpOpen);
-  helpBtn.textContent = helpOpen ? "Hide help" : "How to play";
+  openKingdom("help");
+});
+
+settingsBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  openKingdom("settings");
+});
+
+upgradesBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  openKingdom("upgrades");
+});
+
+creditsBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  openKingdom("credits");
+});
+
+pauseOptionsBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  openKingdom("settings");
+});
+
+settingsMuteBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  game.toggleMute();
+});
+
+settingsBackBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  closeKingdom();
+});
+
+helpBackBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  closeKingdom();
+});
+
+upgradesBackBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  closeKingdom();
+});
+
+creditsBackBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  closeKingdom();
+});
+
+document.querySelectorAll("#upgrades-screen .blessing").forEach((card) => {
+  card.addEventListener("click", (e) => {
+    e.stopPropagation();
+    focusBlessing(card.dataset.blessing || "sun");
+  });
 });
 
 panelHelpBtn?.addEventListener("click", (e) => {
   e.stopPropagation();
-  panelHelpOpen = !panelHelpOpen;
-  panelHowto?.classList.toggle("hidden", !panelHelpOpen);
-  panelHelpBtn.textContent = panelHelpOpen ? "Hide help" : "How to play";
+  openKingdom("help");
 });
 
 panelMuteBtn?.addEventListener("click", (e) => {
@@ -1299,6 +1552,31 @@ window.addEventListener("keydown", (e) => {
   if (!splashDone) return;
   if (overlay?.classList.contains("hidden")) return;
   if (e.repeat) return;
+
+  const kingdomMode = activeKingdomMode();
+  if (kingdomMode) {
+    const els = kingdomTargets(kingdomMode);
+    if (e.code === "ArrowRight" || e.code === "ArrowDown") {
+      e.preventDefault();
+      stepUiFocus(els, 1);
+      return;
+    }
+    if (e.code === "ArrowLeft" || e.code === "ArrowUp") {
+      e.preventDefault();
+      stepUiFocus(els, -1);
+      return;
+    }
+    if (e.code === "Enter" || e.code === "Space") {
+      e.preventDefault();
+      clickFocused(els);
+      return;
+    }
+    if (e.code === "Escape") {
+      e.preventDefault();
+      closeKingdom();
+      return;
+    }
+  }
 
   if (overlay.classList.contains("mode-gameover")) {
     if (e.code === "ArrowRight" || e.code === "ArrowDown") {
@@ -1444,3 +1722,89 @@ window.addEventListener("keydown", (e) => {
     clickFocused(titleTargets());
   }
 });
+
+function prepareShotPlay() {
+  hideLoading();
+  document.body.classList.remove("shot-title", "pixel-title");
+  splash?.classList.add("hidden");
+  splashDone = true;
+  if (game.state !== "playing" && game.state !== "paused") game.start();
+  overlay?.classList.add("hidden");
+}
+
+window.__fernScreens = {
+  title() {
+    hideLoading();
+    showTitleMenu();
+    window.__holdPrompt = true;
+    window.__showPressStart = true;
+    splashDone = true;
+    document.body.classList.add("shot-title");
+    titleMenu?.classList.add("hidden");
+  },
+  menu() {
+    hideLoading();
+    document.body.classList.remove("shot-title");
+    showTitleMenu();
+    splashDone = true;
+  },
+  pause() {
+    prepareShotPlay();
+    if (game.state === "playing") game.pause();
+  },
+  settings() {
+    this.menu();
+    openKingdom("settings");
+  },
+  help() {
+    this.menu();
+    openKingdom("help");
+  },
+  upgrades() {
+    this.menu();
+    openKingdom("upgrades");
+  },
+  credits() {
+    this.menu();
+    openKingdom("credits");
+  },
+  loading() {
+    this.menu();
+    loadingScreen?.classList.remove("hidden");
+  },
+  hud() {
+    prepareShotPlay();
+    if (game.state === "paused") game.resume();
+    game.lives = 3;
+    game.bombs = 3;
+    game.ui.updateLives(3);
+    game.ui.updateBombs?.(3);
+    game.mult = 12;
+    game.ui.updateMult(12);
+    game.ui.updateEconomy?.({ lifeFrac: 0.45, bombFrac: 0.6 });
+    hideWaveBanner();
+  },
+  banner() {
+    this.hud();
+    showWaveBanner("Wave 2", "The siege", true);
+  },
+  gameover() {
+    prepareShotPlay();
+    game.score = Math.max(game.score, 2400);
+    game.peakMult = Math.max(game.peakMult, 6);
+    game.elapsed = Math.max(game.elapsed, 42);
+    game.gameOver();
+  },
+  victory() {
+    prepareShotPlay();
+    showPathResultUI({
+      levelId: listPathLevels()[0]?.id,
+      level: listPathLevels()[0],
+      cleared: true,
+      score: 18000,
+      stars: 3,
+      elapsedSec: 60,
+      peakMult: 8,
+    });
+  },
+};

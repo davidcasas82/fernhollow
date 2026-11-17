@@ -8,12 +8,18 @@
   <title>Ryan and the Siege of Fernhollow</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,800;1,900&family=Outfit:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2305060c'/%3E%3Cpolygon points='70,50 30,72 38,50 30,28' fill='none' stroke='%237df9ff' stroke-width='6'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles-kingdom.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2314285a'/%3E%3Crect x='3' y='3' width='10' height='10' fill='%23f0d24a'/%3E%3Crect x='5' y='5' width='6' height='6' fill='%233d9a4a'/%3E%3C/svg%3E" />
 </head>
 <body>
-  <!-- Full-screen 16-bit title splash (Battletoads / SNES-inspired) -->
+  <div id="loading" class="loading-screen" role="status" aria-live="polite" aria-label="Loading Ryan and the Siege of Fernhollow">
+    <p class="king-kicker">Fernhollow</p>
+    <h1 class="king-title">Ryan and the<br>Siege of Fernhollow</h1>
+    <p class="loading-note">Lighting the courtyard lamps</p>
+  </div>
+
   <div id="splash" class="splash" role="dialog" aria-modal="true" aria-label="Ryan and the Siege of Fernhollow. Press start.">
     <canvas id="title-canvas" width="1600" height="900" aria-hidden="true"></canvas>
     <h1 class="sr-only">Ryan and the Siege of Fernhollow</h1>
@@ -24,10 +30,7 @@
   <div id="app">
     <header class="top-bar">
       <div class="brand" aria-label="Ryan and the Siege of Fernhollow">
-        <div class="brand-logo title-logo">
-          <span class="title-logo-line title-logo-geo"><span class="title-logo-fill">GEOMETRY</span></span>
-          <span class="title-logo-line title-logo-arena"><span class="title-logo-fill">ARENA</span></span>
-        </div>
+        <p class="brand-title"><span>Ryan and the</span><span>Siege of Fernhollow</span></p>
       </div>
       <div class="stats">
         <div class="stat">
@@ -45,14 +48,15 @@
         <div class="stat accent">
           <span class="stat-label" id="gun-label">Sun</span>
           <span id="mult" class="stat-value">×1</span>
+          <span id="xp-meter" class="stat-meter xp-meter" aria-label="Progress toward the next sun-bolt"><i id="xp-bar" style="width:2%"></i></span>
         </div>
         <div class="stat">
-          <span class="stat-label">Lives</span>
+          <span class="stat-label">Hearts</span>
           <span id="lives" class="stat-value">3</span>
-          <span id="life-meter" class="stat-meter" aria-hidden="true"><i style="width:0%"></i></span>
+          <span id="life-meter" class="stat-meter health-meter" aria-label="Hearts"><i id="health-bar" style="width:60%"></i></span>
         </div>
         <div class="stat bomb-stat">
-          <span class="stat-label">Bombs</span>
+          <span class="stat-label">Bursts</span>
           <span id="bombs" class="stat-value">3</span>
           <span id="bomb-meter" class="stat-meter" aria-hidden="true"><i style="width:0%"></i></span>
         </div>
@@ -65,6 +69,10 @@
 
     <main class="stage-wrap">
       <canvas id="game" width="1600" height="900" aria-label="Fernhollow courtyard"></canvas>
+      <div id="wave-banner" class="wave-banner hidden" role="status">
+        <p id="wave-banner-kicker" class="wave-kicker">The siege</p>
+        <p id="wave-banner-text" class="wave-text">Wave 1</p>
+      </div>
 
       <!-- Mobile twin-stick layer (shown only while playing on touch devices) -->
       <div id="touch-controls" class="touch-controls hidden" aria-hidden="true">
@@ -78,7 +86,7 @@
           <div class="touch-stick-base aim"></div>
           <div id="touch-knob-aim" class="touch-stick-knob aim"></div>
         </div>
-        <button type="button" id="touch-bomb" class="touch-fab touch-bomb" aria-label="Bomb">BOMB</button>
+        <button type="button" id="touch-bomb" class="touch-fab touch-bomb" aria-label="Royal Burst">BURST</button>
         <button type="button" id="touch-pause" class="touch-fab touch-pause" aria-label="Pause">❚❚</button>
         <p class="touch-hint" aria-hidden="true">L MOVE · R AIM + FIRE</p>
       </div>
@@ -86,9 +94,8 @@
       <div id="overlay" class="overlay mode-title hidden" aria-live="polite">
         <!-- Live-grid title menu (post-splash / menu state) -->
         <div id="title-menu" class="title-menu">
-          <div class="title-logo" aria-hidden="true">
-            <span class="title-logo-line title-logo-geo"><span class="title-logo-fill">FERNHOLLOW</span></span>
-          </div>
+          <p class="menu-kicker">Fernhollow</p>
+          <h2 class="menu-title">Ryan and the<br>Siege of Fernhollow</h2>
           <p class="title-tag">Hold the courtyard. Scoop the Sunseeds.</p>
 
           <div class="title-actions">
@@ -100,9 +107,24 @@
               <span class="btn-main">STAGES</span>
               <span class="btn-sub">Eight short levels.</span>
             </button>
+            <button id="settings-btn" class="btn arcade stacked" type="button">
+              <span class="btn-main">OPTIONS</span>
+              <span class="btn-sub">Sound for the yard.</span>
+            </button>
+            <button id="upgrades-btn" class="btn arcade stacked" type="button">
+              <span class="btn-main">BLESSINGS</span>
+              <span class="btn-sub">Sun-bolts you can earn.</span>
+            </button>
+            <button id="help-btn" class="btn arcade stacked" type="button">
+              <span class="btn-main">HOW TO PLAY</span>
+              <span class="btn-sub">Move, aim, and fire.</span>
+            </button>
+            <button id="credits-btn" class="btn arcade stacked" type="button">
+              <span class="btn-main">CREDITS</span>
+              <span class="btn-sub">Who holds the yard.</span>
+            </button>
           </div>
           <p class="title-best">Best score <span id="title-best">0</span></p>
-          <button id="help-btn" class="title-help" type="button">How to play</button>
 
           <ul id="how-to" class="how-to title-howto hidden">
             <li>Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>. Drag to aim. Hold click to fire sun-bolts.</li>
@@ -119,13 +141,14 @@
 
         <!-- Interrupt card: pause only -->
         <div id="interrupt-panel" class="panel interrupt-panel hidden">
-          <div class="panel-glow"></div>
+          <p class="king-kicker">Ryan and the Siege of Fernhollow</p>
           <h2 id="overlay-title">Paused</h2>
           <p id="overlay-message">Take a breath. The courtyard can wait.</p>
           <div class="interrupt-actions">
             <button id="interrupt-btn" class="btn arcade compact" type="button">Resume</button>
             <button id="title-btn" class="btn secondary compact hidden" type="button">Title</button>
             <button id="resume-btn" class="btn secondary compact hidden" type="button">Resume</button>
+            <button id="pause-options-btn" class="btn secondary compact" type="button">Options</button>
           </div>
           <button id="panel-help-btn" class="title-help panel-help hidden" type="button">How to play</button>
           <button id="panel-mute-btn" class="title-help panel-mute hidden" type="button">SOUND ON</button>
@@ -143,9 +166,9 @@
         </div>
 
         <!-- Arena Path map (live-grid overlay) -->
-        <div id="path-map" class="path-map hidden" role="dialog" aria-label="Arena Path">
+        <div id="path-map" class="path-map hidden" role="dialog" aria-label="Fernhollow stages">
           <header class="path-map-head">
-            <p class="path-kicker">FERNHOLLOW PATH</p>
+            <p class="path-kicker">Ryan and the Siege of Fernhollow</p>
             <h2 class="path-map-title">SELECT LEVEL</h2>
             <p class="path-map-stars">STARS <span id="path-map-stars">0/24</span></p>
           </header>
@@ -178,7 +201,7 @@
 
         <!-- Level brief before Path start -->
         <div id="path-brief" class="path-brief hidden" role="dialog" aria-label="Level brief">
-          <p class="path-kicker">LEVEL BRIEF</p>
+          <p class="path-kicker">Ryan and the Siege of Fernhollow</p>
           <p id="brief-order" class="brief-order">1 / 8</p>
           <h2 id="brief-name" class="brief-name">Courtyard Dawn</h2>
           <p id="brief-tag" class="brief-tag">Learn the stones.</p>
@@ -195,12 +218,10 @@
           <p class="path-map-hint">ENTER START · ESC BACK</p>
         </div>
 
-        <!-- Path clear / fail result -->
-        <div id="path-result" class="path-result hidden" role="dialog" aria-label="Path result">
-          <div class="path-result-logo" aria-hidden="true">
-            <span id="path-result-word" class="path-result-word"><span class="path-result-fill">CLEAR</span></span>
-          </div>
-          <p id="path-result-tag" class="path-result-tag">GRID WAKE</p>
+        <div id="path-result" class="path-result hidden" role="dialog" aria-label="Victory">
+          <p class="king-kicker">Ryan and the Siege of Fernhollow</p>
+          <h2 id="path-result-word" class="pixel-banner"><span class="path-result-fill">Victory</span></h2>
+          <p id="path-result-tag" class="path-result-tag">The crown shines</p>
 
           <div id="path-result-stars" class="path-result-stars" aria-label="Stars earned">
             <span class="star-pip" data-i="1">★</span>
@@ -232,19 +253,83 @@
           <div class="path-result-actions">
             <button id="pr-primary-btn" class="btn arcade" type="button">NEXT</button>
             <button id="pr-retry-btn" class="btn secondary" type="button">RETRY</button>
-            <button id="pr-map-btn" class="btn secondary" type="button">PATH MAP</button>
+            <button id="pr-map-btn" class="btn secondary" type="button">STAGES</button>
             <button id="pr-title-btn" class="btn secondary go-title-btn" type="button">TITLE</button>
           </div>
           <p class="path-map-hint">R RETRY · ENTER PRIMARY · ESC MAP</p>
         </div>
 
-        <!-- Classic chrome GAME OVER (no boilerplate box) -->
-        <div id="gameover-menu" class="gameover-menu hidden" role="dialog" aria-label="Game over">
-          <div class="gameover-logo" aria-hidden="true">
-            <span class="gameover-line gameover-game"><span class="gameover-fill">GAME</span></span>
-            <span class="gameover-line gameover-over"><span class="gameover-fill">OVER</span></span>
+        <div id="settings-screen" class="king-panel king-screen hidden" role="dialog" aria-label="Options">
+          <p class="king-kicker">Ryan and the Siege of Fernhollow</p>
+          <h2>Options</h2>
+          <p>Sound for the courtyard. The siege stays brave and bright.</p>
+          <div class="king-actions">
+            <button id="settings-mute-btn" class="btn arcade compact" type="button">SOUND ON</button>
+            <button id="settings-back-btn" class="btn secondary compact" type="button">BACK</button>
           </div>
-          <p class="gameover-tag">THE COURTYARD GROWS QUIET</p>
+        </div>
+
+        <div id="help-screen" class="king-panel king-screen hidden" role="dialog" aria-label="How to play">
+          <p class="king-kicker">Ryan and the Siege of Fernhollow</p>
+          <h2>How to play</h2>
+          <ul class="controls-list">
+            <li>Move with W A S D. Drag to aim. Hold click to fire sun-bolts.</li>
+            <li>Gamepad: left stick move, right stick aim, RT fire, LT burst.</li>
+            <li>Phone: left thumb move, right thumb aim and fire, BURST button.</li>
+            <li>Scoop gold Sunseeds. ×45 twin bolts. ×110 triple bolts.</li>
+            <li>Space is a Royal Burst. Hearts and bursts fill the bars.</li>
+            <li>P pauses. Courtyard is one long run. Stages are eight short levels.</li>
+          </ul>
+          <div class="king-actions">
+            <button id="help-back-btn" class="btn secondary compact" type="button">BACK</button>
+          </div>
+        </div>
+
+        <div id="upgrades-screen" class="king-panel king-screen hidden" role="dialog" aria-label="Blessings">
+          <p class="king-kicker">Ryan and the Siege of Fernhollow</p>
+          <h2>Blessings</h2>
+          <p id="blessing-blurb">Scoop Sunseeds. The sun-bolts grow as the multiplier climbs.</p>
+          <div class="blessing-row" role="listbox" aria-label="Sun-bolt gifts">
+            <button type="button" class="blessing is-focused" data-blessing="sun">
+              <canvas class="fx-chip" data-fx="sunseed" width="64" height="64" aria-hidden="true"></canvas>
+              <span class="blessing-name">Sunseed</span>
+              <span class="blessing-note">One bright bolt.</span>
+            </button>
+            <button type="button" class="blessing" data-blessing="twin">
+              <canvas class="fx-chip" data-fx="bolt" width="64" height="64" aria-hidden="true"></canvas>
+              <span class="blessing-name">Twin</span>
+              <span class="blessing-note">At ×45, two bolts.</span>
+            </button>
+            <button type="button" class="blessing" data-blessing="triple">
+              <canvas class="fx-chip" data-fx="spark" width="64" height="64" aria-hidden="true"></canvas>
+              <span class="blessing-name">Triple</span>
+              <span class="blessing-note">At ×110, three bolts.</span>
+            </button>
+          </div>
+          <div class="king-actions">
+            <button id="upgrades-back-btn" class="btn secondary compact" type="button">BACK</button>
+          </div>
+        </div>
+
+        <div id="credits-screen" class="king-panel king-screen hidden" role="dialog" aria-label="Credits">
+          <p class="king-kicker">Ryan and the Siege of Fernhollow</p>
+          <h2>Credits</h2>
+          <ul class="credits-list">
+            <li>Ryan, in the green hoodie, holds the courtyard.</li>
+            <li>The knights of Fernhollow are away in the far meadows.</li>
+            <li>Pufflings, Thistle Jays, and their friends tumble over the walls.</li>
+            <li>Sunseeds, Heart Apples, and Royal Bursts light the yard.</li>
+            <li>A family game. Brave and fun.</li>
+          </ul>
+          <div class="king-actions">
+            <button id="credits-back-btn" class="btn secondary compact" type="button">BACK</button>
+          </div>
+        </div>
+
+        <div id="gameover-menu" class="gameover-menu hidden" role="dialog" aria-label="Game over">
+          <p class="king-kicker">Ryan and the Siege of Fernhollow</p>
+          <h2 class="pixel-banner">Game Over</h2>
+          <p class="gameover-tag">The courtyard grows quiet</p>
 
           <div class="gameover-stats" aria-live="polite">
             <div class="go-stat">

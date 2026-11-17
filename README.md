@@ -1,14 +1,20 @@
-# Geometry Arena
+# Ryan and the Siege of Fernhollow
 
-A **Geometry Wars–inspired** twin-stick shooter for the browser. Move with WASD, aim with the mouse, hold click to fire, and survive escalating geometric swarms. Bluetooth / USB gamepads work too (left stick move, right stick aim).
+A kid-friendly twin-stick courtyard game. Young Ryan holds the castle yard in his green hoodie and red neckerchief while mischievous forest creatures tumble over the walls. Move, aim, and fire sun-bolts. Scoop gold Sunseeds. If the courtyard holds, the crown shines on Fernhollow once more.
 
-## Play now
+Brave and fun. No frights.
 
-**[▶ Open Geometry Arena](https://davidcasas82.github.io/geometry-arena/)**
+## Itch blurb
 
-Works on **desktop** (mouse/keyboard), **gamepad** (TV/couch), and **phone/tablet** (virtual twin-sticks — landscape recommended).
+**Ryan and the Siege of Fernhollow**
 
-## Play locally
+The knights are away in the far meadows, and the golden crown is missing. Only Ryan stands on the cobblestones. Pufflings waddle in. Thistle Jays dash. Acorn Spinners orbit. Gust Blooms tug you closer with a playful puff of wind.
+
+Sun-bolts send them packing. Scoop the Sunseeds they leave behind. At a high multiplier the bolts fly in a pair, then in a trio. Heart Apples and Royal Bursts are scarce treats. One long courtyard run, or eight short stages.
+
+WASD to move. Mouse to aim. Hold click to fire. Space for a Royal Burst. Gamepad and touch work too. A bright kingdom story for young players.
+
+## Play
 
 From this folder:
 
@@ -16,64 +22,39 @@ From this folder:
 npm start
 ```
 
-Then open **http://localhost:5173**
-
-Or open `index.html` with any static file server (ES modules need a server, not `file://`).
+Open the page the static server prints. ES modules need a server.
 
 ## Controls
 
 | Action | Keyboard / mouse | Gamepad |
 |--------|------------------|---------|
-| Move | `W` `A` `S` `D` (or arrows) | Left stick (analog speed) / D-pad |
-| Aim | Drag trackpad / mouse (relative) | Right stick (absolute) |
-| Fire | **Click and hold** left mouse | **RT** or **RB** (hold) |
-| Bomb | `Space` or `B` | **LT** (also A / LB) |
-| Pause | `P` / `Esc` | **Start** / Options |
-| Mute | `M` | **Back** / Select / Share |
-| Restart | Play Again / `R` after game over | **A** or **Start** |
-| Title menu | **Title** on game over | — |
-| Title PLAY | `Enter` / `Space` | **A** or **Start** |
+| Move | `W` `A` `S` `D` (or arrows) | Left stick / D-pad |
+| Aim | Drag the mouse | Right stick |
+| Fire | **Click and hold** | **RT** or **RB** |
+| Royal Burst | `Space` or `B` | **LT** |
+| Pause | `P` / `Esc` | **Start** |
+| Sound | `M` | **Back** / Select |
+| Again | Play Again / `R` after the courtyard grows quiet | **A** or **Start** |
+| Title | **Title** on the quiet screen | — |
+| Menu | `Enter` / arrows | **A**, **Start**, D-pad |
 
-### Touch (phone / tablet)
+### Touch
 
 | Action | Gesture |
 |--------|---------|
-| Move | Left thumb — drag (virtual stick) |
-| Aim + fire | Right thumb — drag to aim, hold to fire |
-| Bomb | **BOMB** button |
-| Pause | **❚❚** button |
+| Move | Left thumb |
+| Aim + fire | Right thumb, hold to fire |
+| Royal Burst | **BURST** |
+| Pause | **❚❚** |
 
-Landscape is best. A rotate hint appears in portrait. Desktop mouse/keyboard and gamepad are unchanged when you’re not on a touch device.
+Landscape is best. A rotate hint appears in portrait.
 
-Pair a Bluetooth controller in system settings first (Xbox, DualSense, Switch Pro, 8BitDo, etc.). Press any button once so the browser can see the pad. Keyboard and gamepad work at the same time.
+## The courtyard
 
-On play, the game captures the pointer so trackpad aim doesn’t stop at the screen edge (gamepad aim does not need pointer lock).
-
-## Geometry Wars–inspired systems
-
-See honest gap scores vs the real game: [`docs/VS_GEOMETRY_WARS.md`](docs/VS_GEOMETRY_WARS.md).
-
-- **Geom mult economy** — +1 ×mult per geom, ceiling 999, idle decay, death soft-keeps mult  
-- **Reactive neon grid**, additive particles, thruster afterimages  
-- **Fire densifies with mult** — needle until **×45 dual**, **×110 triple** (HUD says so)  
-- **Bombs** — shockwave clear, no points; start 3 / max 5; +1 every **38k** base progress  
-- **Extra lives** — start 3 / max 5; first +life every **32k** base progress (escalates)  
-- **Wave spawn director** (bursts + lulls + formations)
-
-## Enemies
-
-| Shape | Behavior |
-|-------|----------|
-| Spore (ice drone) | Slow pack-seek |
-| Thorn (jade spear) | Lane-charge seek |
-| Jaw (coral) | Creep, coil, then bite |
-| Gyro (lilac blades) | Orbit approach |
-| Rift (cracked tablet) | Dies into 2 shards |
-| Lash (coral whip) | Multi-segment weaver |
-| Slab (amber brick) | Slow, 3 HP |
-| Maw (ink blot) | Pulls you in, sheds shards |
-
-Scoop **geoms** to raise multiplier. Death soft-resets mult (keeps a recovery seed).
+- **Sunseeds** raise the multiplier. ×45 twin bolts. ×110 triple bolts. A bump keeps a seed.
+- **Hearts** start at 3, cap at 5. **Royal Bursts** start at 3, cap at 5.
+- **Courtyard** is one long run. **Stages** is eight short levels.
+- Pufflings waddle. Thistle Jays dash. Acorn Spinners orbit. Moss Turtles soak bolts. Gust Blooms tug you in, then drop Sunseeds.
 
 ## Soundtrack
 
@@ -85,42 +66,13 @@ Original pulse, triangle, and noise music, synthesized in the game. Previews liv
 | A fight, including the courtyard | Driving, and the bass leads |
 | The boss stage | Heavier and faster |
 
-Effects (a swing, a hit, a foe popping, a pickup, a level-up, menu move and select, getting hurt, and the boss intro) sit quieter than the music. Mute with `M`.
+Effects sit quieter than the music. Mute with `M`.
 
 ## Stack
 
 - Vanilla HTML / CSS / JS (ES modules)
-- Canvas 2D rendering
+- Canvas 2D. Sprites are `drawImage` from the atlas, with smoothing off and an integer scale
 - Web Audio music and effects, synthesized from the score
-- LocalStorage for high score
+- Best score saved in this browser
 
-## Dev / session handoff
-
-For architecture, UI flow, balance contracts, past bugs, and how to resume work in a new session, see:
-
-**[`docs/BUILD_CONTEXT.md`](docs/BUILD_CONTEXT.md)**
-
-Balance knobs live in `js/constants.js` (prefer that over README numbers if they disagree).
-
-## Deploy (GitHub Pages)
-
-This repo is set up for **GitHub Pages** on the `main` branch (site root).
-
-| | |
-|--|--|
-| **Live game** | https://davidcasas82.github.io/geometry-arena/ |
-| **Source** | https://github.com/davidcasas82/geometry-arena |
-
-**Update the live site:** commit and push to `main` — Pages rebuilds automatically (usually under a minute).
-
-```bash
-git add -A
-git commit -m "Your change"
-git push
-```
-
-Other static hosts (Vercel, Netlify, Cloudflare Pages) also work if you ever want a custom domain or private deploys.
-
-## Tuning
-
-Gameplay knobs live in `js/constants.js` (speeds, fire rate, spawn ramp, lives, colors).
+Balance knobs live in `js/constants.js`.

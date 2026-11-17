@@ -1,5 +1,5 @@
 /**
- * Geometry Arena — mode runtime (Path levels).
+ * Fernhollow — mode runtime (stage levels).
  * Contract: docs/LEVELS_DESIGN.md
  *
  * Classic Evolved uses no controller (passthrough / null modeId).

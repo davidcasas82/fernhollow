@@ -418,6 +418,7 @@ start(opts = {}) {
       this.audio.playLevelTheme(1, { restart: true });
     }
     this.ui.hideOverlay();
+    this.ui.showBanner?.("Wave 1", "The siege");
     this.ui.updateScore(0);
     this.ui.updateMult(1);
     this.ui.updateLives(this.lives);
@@ -440,7 +441,7 @@ start(opts = {}) {
     this._gridPulse(px, py, 1.4);
     addTrauma(this.cam, 0.12, { big: true });
     punchZoom(this.cam, 0.05);
-    this.particles.floater(px, py - 40, "GO", COLORS.player, 1.2);
+    this.particles.floater(px, py - 40, "WAVE 1", COLORS.player, 1.2);
   }
 
   /** Reset Path-only runtime fields without touching Classic combat state. */
@@ -582,7 +583,7 @@ this.modeFlags = new Set();
       this.particles.floater(
         this.player.x,
         this.player.y - 64,
-        "PINCH",
+        "NARROW",
         COLORS.danger,
         1.3
       );
@@ -593,7 +594,7 @@ this.modeFlags = new Set();
       this.particles.floater(
         this.player.x,
         this.player.y - 64,
-        "RAGE",
+        "STOMP",
         COLORS.danger,
         1.3
       );
@@ -652,7 +653,7 @@ this.modeFlags = new Set();
       this.particles.floater(
         this.player.x,
         this.player.y - 72,
-        "WRAP — EDGES ARE DOORS",
+        "GATES JOIN",
         COLORS.player,
         1.2
       );
@@ -799,6 +800,7 @@ this.modeFlags = new Set();
     this.ui.updatePathLevel?.(level);
     this.ui.updateObjective?.("");
     this.ui.updateTimer?.("");
+    this.ui.showBanner?.(level.name || `Level ${level.order || 1}`, "Fernhollow");
 
     this.audio.playTheme(getLevelTheme(level), { restart: true });
 
@@ -807,7 +809,7 @@ this.modeFlags = new Set();
       this.particles.floater(
         this.player.x,
         this.player.y - 64,
-        "WRAP — EDGES ARE DOORS",
+        "GATES JOIN",
         COLORS.player,
         1.25
       );
@@ -1015,13 +1017,14 @@ this.modeFlags = new Set();
     this.level += 1;
     this.levelTimer = 0;
     this.ui.updateLevel?.(this.level);
+    this.ui.showBanner?.(`Wave ${this.level}`, "The siege");
     this.audio.levelUp();
     // Same run — keep the bed playing. Restarting every 50s felt like a new stage.
     this.audio.playLevelTheme(this.level, { restart: false });
     this.particles.floater(
       this.player.x,
       this.player.y - 36,
-      `HEAT ${this.level}`,
+      `WAVE ${this.level}`,
       COLORS.player,
       1.35
     );
@@ -1075,7 +1078,7 @@ this.modeFlags = new Set();
       const unusedBombs = this.bombs;
       const autopsyBits = [];
       if (newBest) autopsyBits.push("NEW BEST");
-      if (unusedBombs > 0) autopsyBits.push(`${unusedBombs} BOMB${unusedBombs === 1 ? "" : "S"} UNUSED`);
+      if (unusedBombs > 0) autopsyBits.push(`${unusedBombs} BURST${unusedBombs === 1 ? "" : "S"} LEFT`);
       if (this.mult > 1) autopsyBits.push(`KEEP ×${this.mult}`);
       this.ui.showGameOver({
         score: this.score,
@@ -1094,7 +1097,7 @@ this.modeFlags = new Set();
     } else {
       this.ui.showOverlay(
         "Game Over",
-        `This run: ${timeStr} · ${this.score.toLocaleString()} · peak ×${this.peakMult} · ${this.deathCount} death(s)\nBest ${this.best.toLocaleString()}\n\nLast runs:\n${summary}`,
+        `This run: ${timeStr} · ${this.score.toLocaleString()} · peak ×${this.peakMult} · ${this.deathCount} bump(s)\nBest ${this.best.toLocaleString()}\n\nLast runs:\n${summary}`,
         false,
         "Play Again",
         () => this.start(),
@@ -1196,18 +1199,20 @@ this.modeFlags = new Set();
       this.particles.floater(
         this.player.x,
         this.player.y - 56,
-        "DUAL STREAM",
+        "TWIN BOLTS",
         COLORS.player,
         1.35
       );
+      this.ui.showBanner?.("Twin sun-bolts", "A blessing");
       this.audio.extraLife?.();
     }
     if (p < MULT_FOR_TRIPLE && n >= MULT_FOR_TRIPLE && this._streamAnnounced < 2) {
       this._streamAnnounced = 2;
+      this.ui.showBanner?.("Triple sun-bolts", "A blessing");
       this.particles.floater(
         this.player.x,
         this.player.y - 56,
-        "TRIPLE STREAM",
+        "TRIPLE BOLTS",
         COLORS.geom,
         1.45
       );

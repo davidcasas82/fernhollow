@@ -1,5 +1,5 @@
 /**
- * Geometry Arena — GOLDLOCKS PASS 1
+ * Fernhollow — balance pass 1
  * Target: median death ~90–150s, scarce lives, single-stream skill gun,
  * readable density, mult as the real currency.
  *
@@ -315,7 +315,7 @@ export const GFX = {
   QUALITY: "high",
   /**
    * Sticky override: 'high' | 'low' | null.
-   * Console: GFX.QUALITY_FORCE = 'low'; applyGfxQuality(); __geometryArena.fitCanvas()
+   * Console: GFX.QUALITY_FORCE = 'low'; applyGfxQuality(); __fernhollow.fitCanvas()
    */
   QUALITY_FORCE: null,
   /** Cap devicePixelRatio so 3× displays don’t melt GPUs */
@@ -598,7 +598,7 @@ export const SPAWN_LATE_WEIGHTS = Object.freeze({
   void: 0.22,
 });
 
-export const HS_KEY = "geometry-arena-highscore";
+export const HS_KEY = "fernhollow-best";
 
 /** Heat cadence (unstick from ~50s pincer intro). Music does not change with it. */
 export const LEVEL_DURATION_SEC = 70;

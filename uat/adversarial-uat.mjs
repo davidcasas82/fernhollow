@@ -211,7 +211,7 @@ function makeGame() {
   return g;
 }
 
-console.log("\n=== Geometry Arena UAT (ADVERSARIAL) ===\n");
+console.log("\n=== Fernhollow UAT (ADVERSARIAL) ===\n");
 console.log("  These are the tests that should have caught immortality & life inflation.\n");
 
 // ── Lives economy ────────────────────────────────────────

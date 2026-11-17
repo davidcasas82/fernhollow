@@ -1,4 +1,4 @@
-# Geometry Arena — Levels Design Lock (MVP)
+# Fernhollow — Levels Design Lock (MVP)
 
 **Status:** SHIPPED topologies (PR B, 2026-08-16) — `js/levels.js` is the number source of truth.  
 **Audience:** arena-topology · mode-runtime · path-ui-progress · game integration agents  
@@ -553,7 +553,7 @@ export function chapterMeta() {} // [{ chapter, title, levelIds }]
 Mirror `runs.js` localStorage style.
 
 ```js
-export const PROGRESS_KEY = "geometry-arena-path-progress";
+export const PROGRESS_KEY = "fernhollow-path";
 export const PROGRESS_VERSION = 1;
 
 /** @returns {import('./levels.js').PathProgress} */

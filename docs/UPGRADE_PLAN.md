@@ -1,4 +1,4 @@
-# Geometry Arena — Upgrade Plan
+# Fernhollow — Upgrade Plan
 
 **Status:** LOCKED path (2026-08-16). Execute; do not re-open the six-audit research.  
 **Step 1–2 done. PR A–D shipped.** Plan execute pass complete.
@@ -162,7 +162,7 @@ Fold extra UAT cases **into the PR they belong to** (morph crush, wrap, donut, c
 
 ## Next session checklist
 
-1. Hard-refresh localhost.  
+1. Hard-refresh the page.
 2. Title: **ENDLESS** vs **STAGES**.  
 3. Pause → SOUND ON works on phones.  
 4. After A–D backlog only if asked (mid GFX, bigger sticks, scoop lesson, etc.).

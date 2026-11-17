@@ -5,8 +5,8 @@
 
 import { HS_KEY } from "./constants.js";
 
-export const RUNS_KEY = "geometry-arena-runs";
-export const DEATHS_KEY = "geometry-arena-deaths";
+export const RUNS_KEY = "fernhollow-runs";
+export const DEATHS_KEY = "fernhollow-deaths";
 const MAX_RUNS = 20;
 const MAX_DEATHS = 50;
 

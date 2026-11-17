@@ -1,0 +1,690 @@
+/* Kingdom chrome for Ryan and the Siege of Fernhollow.
+   Panels are parchment and stone colors until the 9-slice frames in
+   docs/previews/ui/art-spec.md exist. Sprites stay on the atlas. */
+
+:root {
+  --bg: #14285a;
+  --bg-elevated: #1a1420;
+  --panel: #f6e6c4;
+  --border: #5a4636;
+  --text: #fff4dc;
+  --muted: #5a4636;
+  --accent: #3d9a4a;
+  --accent-2: #f0d24a;
+  --danger: #d23b3b;
+  --shadow: 4px 4px 0 #1a1420;
+  --font: "Press Start 2P", monospace;
+  --display: "Press Start 2P", monospace;
+  --ink: #1a1420;
+  --paper: #f6e6c4;
+  --jade: #3d9a4a;
+  --coral: #d23b3b;
+  --amber: #f0d24a;
+}
+
+html,
+body {
+  background: #14285a;
+  color: #fff4dc;
+  font-family: "Press Start 2P", monospace;
+}
+
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  background: #14285a;
+  color: #fff4dc;
+  text-align: center;
+}
+
+.loading-screen.hidden {
+  display: none;
+}
+
+.king-kicker,
+.menu-kicker,
+.wave-kicker {
+  margin: 0;
+  font-family: "Press Start 2P", monospace;
+  font-size: 8px;
+  line-height: 1.6;
+  letter-spacing: 0;
+  color: #8a5a10;
+  text-shadow: none;
+}
+
+.king-title,
+.menu-title,
+.pixel-banner {
+  margin: 0;
+  font-family: "Press Start 2P", monospace;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0;
+  line-height: 1.45;
+  color: #1a1420;
+  text-shadow: none;
+}
+
+.king-title {
+  color: #f0d24a;
+  font-size: clamp(14px, 2.4vw, 22px);
+}
+
+.loading-note {
+  margin: 0;
+  font-size: 8px;
+  line-height: 1.6;
+  color: #fff4dc;
+}
+
+.brand-title {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 8px;
+  line-height: 1.45;
+  color: #f0d24a;
+  text-shadow: 2px 2px 0 #1a1420;
+}
+
+.top-bar {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat,
+.stat.accent,
+.stat.bomb-stat {
+  background: #f6e6c4;
+  color: #1a1420;
+  border: 3px solid #5a4636;
+  box-shadow: 3px 3px 0 #1a1420;
+  min-width: 78px;
+  padding: 8px 8px 6px;
+  text-align: left;
+}
+
+.stat-label,
+.stat-value,
+.go-label,
+.go-value,
+.path-map-title,
+.path-map-stars,
+.path-chapter-label,
+.path-node-order,
+.path-node-name,
+.path-focus-name,
+.brief-name,
+.gameover-tag,
+.path-result-tag {
+  font-family: "Press Start 2P", monospace;
+  font-style: normal;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.stat-label {
+  color: #5a4636;
+  font-size: 7px;
+  margin-bottom: 6px;
+}
+
+.stat-value,
+.stat.accent .stat-value,
+.stat.bomb-stat .stat-value,
+.stat.accent.hot .stat-value,
+.stat.accent.blazing .stat-value {
+  color: #1a1420;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.stat.accent.hot,
+.stat.accent.blazing {
+  border-color: #8a5a10;
+  box-shadow: 3px 3px 0 #1a1420;
+  animation: none;
+}
+
+.stat-meter {
+  height: 10px;
+  margin-top: 6px;
+  background: #5a4636;
+  border: 2px solid #1a1420;
+}
+
+.stat-meter i,
+.health-meter i {
+  background: #d23b3b;
+}
+
+.xp-meter i {
+  background: #f0d24a;
+}
+
+.stat.bomb-stat .stat-meter i {
+  background: #3d9a4a;
+}
+
+.stage-wrap {
+  border-color: #5a4636;
+  background: #101a3d;
+  box-shadow: 4px 4px 0 #1a1420;
+}
+
+#game {
+  cursor: crosshair;
+  background: #14285a;
+}
+
+.bottom-bar .btn.ghost {
+  font-family: "Press Start 2P", monospace;
+  font-size: 8px;
+  color: #1a1420;
+  background: #f6e6c4;
+  border: 3px solid #5a4636;
+  border-radius: 0;
+  box-shadow: 3px 3px 0 #1a1420;
+}
+
+.menu-title {
+  font-size: 11px;
+  color: #1a1420;
+}
+
+body.pixel-title .title-menu,
+body.pixel-title .title-menu.entering,
+.king-panel,
+.interrupt-panel,
+.gameover-menu,
+.path-map,
+.path-brief,
+.path-result {
+  background: #f6e6c4;
+  color: #1a1420;
+  border: 4px solid #5a4636;
+  box-shadow:
+    inset 0 0 0 3px #e7d3a4,
+    inset 0 0 0 6px #8a6a45,
+    6px 6px 0 #1a1420;
+  font-family: "Press Start 2P", monospace;
+}
+
+body.pixel-title .bottom-bar {
+  visibility: hidden;
+}
+
+body.pixel-title .title-menu,
+body.pixel-title .title-menu.entering {
+  top: 6vh;
+  right: 3vw;
+  transform: none;
+  width: min(440px, 46vw);
+  max-width: 46vw;
+  max-height: 88vh;
+  overflow: auto;
+  gap: 8px;
+  padding: 14px 12px 12px;
+  animation: none;
+}
+
+body.pixel-title .title-tag,
+body.pixel-title .title-best,
+body.pixel-title .title-menu .btn,
+.king-panel p,
+.king-panel h2,
+.interrupt-panel h2,
+.interrupt-panel p,
+.gameover-tag,
+.path-result-tag {
+  font-family: "Press Start 2P", monospace;
+  color: #1a1420;
+  text-shadow: none;
+  letter-spacing: 0;
+}
+
+body.pixel-title .title-tag,
+.king-panel p,
+.interrupt-panel p {
+  font-size: 8px;
+  line-height: 1.65;
+}
+
+body.pixel-title .title-best,
+body.pixel-title .title-best span {
+  color: #8a5a10;
+  font-size: 8px;
+}
+
+body.pixel-title .title-actions {
+  gap: 8px;
+}
+
+body.pixel-title .title-menu .btn,
+.btn.arcade,
+.btn.arcade.path-cta,
+.btn.secondary {
+  font-family: "Press Start 2P", monospace;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  text-shadow: none;
+  border-radius: 0;
+  animation: none;
+}
+
+body.pixel-title .title-menu .btn,
+.btn.arcade {
+  background: #3d9a4a;
+  color: #fff4dc;
+  border: 3px solid #1a1420;
+  box-shadow: 3px 3px 0 #1a1420;
+}
+
+.btn.arcade.path-cta,
+.btn.secondary {
+  background: #f0d24a;
+  color: #1a1420;
+  border: 3px solid #1a1420;
+  box-shadow: 3px 3px 0 #1a1420;
+}
+
+.btn.arcade:hover,
+.btn.secondary:hover,
+body.pixel-title .title-menu .btn:hover {
+  filter: brightness(1.05);
+  border-color: #1a1420;
+  box-shadow: 3px 3px 0 #1a1420;
+}
+
+.btn.arcade .btn-main {
+  font-size: 10px;
+  letter-spacing: 0;
+}
+
+.btn.arcade .btn-sub {
+  font-family: "Press Start 2P", monospace;
+  font-size: 7px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: inherit;
+  opacity: 1;
+}
+
+.btn.arcade.stacked {
+  min-height: 0;
+  padding: 8px 10px;
+  gap: 6px;
+}
+
+.btn.is-focused,
+.title-help.is-focused,
+.blessing.is-focused {
+  outline: none;
+  box-shadow:
+    inset 4px 0 0 #c45a12,
+    3px 3px 0 #1a1420;
+}
+
+.btn.is-focused::before,
+.blessing.is-focused::before {
+  content: ">";
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  color: #1a1420;
+}
+
+.btn,
+.blessing {
+  position: relative;
+}
+
+.btn.is-focused,
+.blessing.is-focused {
+  padding-left: 22px;
+}
+
+.overlay.mode-title {
+  background: transparent;
+}
+
+.overlay.mode-panel,
+.overlay.mode-gameover,
+.overlay.mode-path,
+.overlay.mode-brief,
+.overlay.mode-path-result,
+.overlay.mode-settings,
+.overlay.mode-help,
+.overlay.mode-upgrades,
+.overlay.mode-credits {
+  background: rgba(16, 26, 61, 0.62);
+  backdrop-filter: none;
+}
+
+.overlay > .king-screen {
+  display: none !important;
+  pointer-events: none;
+}
+
+.overlay.mode-settings > #settings-screen:not(.hidden),
+.overlay.mode-help > #help-screen:not(.hidden),
+.overlay.mode-upgrades > #upgrades-screen:not(.hidden),
+.overlay.mode-credits > #credits-screen:not(.hidden) {
+  display: flex !important;
+  pointer-events: auto;
+}
+
+.king-panel {
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(640px, 94vw);
+  max-height: min(90vh, 760px);
+  overflow: auto;
+  padding: 18px 16px 16px;
+  text-align: center;
+}
+
+.king-panel h2,
+.interrupt-panel h2,
+.pixel-banner,
+.path-result-fill {
+  font-family: "Press Start 2P", monospace;
+  font-size: 16px;
+  font-weight: 400;
+  font-style: normal;
+  color: #1a1420;
+  letter-spacing: 0;
+  text-shadow: none;
+  -webkit-text-fill-color: #1a1420;
+  -webkit-text-stroke: 0;
+  background: none;
+}
+
+.king-actions,
+.interrupt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.controls-list,
+.credits-list {
+  margin: 0;
+  padding: 0 8px;
+  list-style: none;
+  text-align: left;
+  max-width: 520px;
+}
+
+.controls-list li,
+.credits-list li {
+  font-size: 8px;
+  line-height: 1.65;
+  color: #1a1420;
+  padding: 6px 0;
+}
+
+.blessing-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+}
+
+.blessing {
+  width: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background: #fff4dc;
+  border: 3px solid #5a4636;
+  box-shadow: 3px 3px 0 #1a1420;
+  color: #1a1420;
+  font-family: "Press Start 2P", monospace;
+  cursor: pointer;
+}
+
+.blessing-name {
+  font-size: 10px;
+}
+
+.blessing-note {
+  font-size: 7px;
+  line-height: 1.5;
+}
+
+.fx-chip {
+  width: auto;
+  height: auto;
+  image-rendering: pixelated;
+  background: transparent;
+}
+
+.wave-banner {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  min-width: min(420px, 80%);
+  padding: 12px 18px 10px;
+  text-align: center;
+  background: #f6e6c4;
+  border: 4px solid #5a4636;
+  box-shadow:
+    inset 0 0 0 3px #e7d3a4,
+    4px 4px 0 #1a1420;
+  pointer-events: none;
+}
+
+.wave-banner.hidden {
+  display: none;
+}
+
+.wave-kicker {
+  color: #8a5a10;
+}
+
+.wave-text {
+  margin: 6px 0 0;
+  font-family: "Press Start 2P", monospace;
+  font-size: 16px;
+  color: #1a1420;
+}
+
+.gameover-menu,
+.path-result {
+  gap: 10px;
+  padding: 18px 16px;
+}
+
+.gameover-stats,
+.path-result-stats {
+  width: 100%;
+}
+
+.go-stat,
+.go-stat.accent {
+  background: #fff4dc;
+  border: 3px solid #5a4636;
+  box-shadow: none;
+}
+
+.title-help,
+.panel-help,
+.panel-mute {
+  font-family: "Press Start 2P", monospace;
+  color: #8a5a10;
+  font-size: 8px;
+  text-decoration: none;
+}
+
+.go-label,
+.go-value,
+.gameover-meta,
+.gameover-hint,
+.path-map-hint,
+.path-result-meta,
+.path-focus-tag,
+.path-focus-lesson,
+.brief-tag,
+.brief-lesson,
+.brief-objective {
+  font-family: "Press Start 2P", monospace;
+  color: #1a1420;
+  text-shadow: none;
+  letter-spacing: 0;
+}
+
+.go-label,
+.gameover-hint,
+.path-map-hint {
+  font-size: 7px;
+}
+
+.go-value {
+  font-size: 12px;
+}
+
+.path-kicker {
+  color: #8a5a10;
+  letter-spacing: 0;
+  font-size: 8px;
+  text-shadow: none;
+}
+
+.path-map-title,
+.brief-name,
+.path-focus-name {
+  color: #1a1420;
+  text-shadow: none;
+  font-size: 14px;
+}
+
+.path-map-stars,
+.path-map-stars span,
+.path-chapter-label,
+.path-node-order,
+.path-node-name {
+  color: #5a4636;
+  text-shadow: none;
+}
+
+.path-chapter,
+.path-focus {
+  background: #fff4dc;
+  border: 3px solid #5a4636;
+  box-shadow: 3px 3px 0 #1a1420;
+}
+
+.path-route::before,
+.path-nodes::before {
+  background: #8a6a45;
+  box-shadow: none;
+}
+
+.path-node-pip,
+.path-node.is-unlocked .path-node-pip,
+.path-node.is-cleared .path-node-pip,
+.path-node.is-locked .path-node-pip,
+.path-node.is-focused:not(.is-locked) .path-node-pip,
+.path-node:hover:not(.is-locked) .path-node-pip {
+  transform: none;
+  border-radius: 0;
+  background: #c4b49a;
+  border: 3px solid #5a4636;
+  box-shadow: 3px 3px 0 #1a1420;
+  filter: none;
+}
+
+.path-node.is-unlocked .path-node-pip {
+  background: #3d9a4a;
+}
+
+.path-node.is-cleared .path-node-pip {
+  background: #f0d24a;
+}
+
+.path-node-pip::after {
+  border-color: #1a1420;
+  border-radius: 0;
+}
+
+.path-badge {
+  background: #fff4dc;
+  color: #1a1420;
+  border: 2px solid #5a4636;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.how-to kbd {
+  border-color: #5a4636;
+  background: #fff4dc;
+  color: #1a1420;
+  box-shadow: none;
+  font-family: "Press Start 2P", monospace;
+}
+
+.panel-glow {
+  display: none;
+}
+
+.comic-stamp,
+.title-logo-fill,
+.logo-fill,
+.gameover-fill,
+.path-result-fill {
+  font-style: normal;
+  font-weight: 400;
+  color: #1a1420;
+  -webkit-text-fill-color: #1a1420;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+  background: none;
+}
+
+body.shot-title .title-menu,
+body.shot-title .top-bar,
+body.shot-title .bottom-bar,
+body.shot-title #overlay {
+  visibility: hidden;
+}
+
+.touch-bomb,
+.touch-pause {
+  font-family: "Press Start 2P", monospace;
+  background: #f6e6c4;
+  color: #1a1420;
+  border: 3px solid #5a4636;
+  box-shadow: 3px 3px 0 #1a1420;
+}
+
+.star-pip {
+  color: #c4b49a;
+  text-shadow: none;
+}
+
+.star-pip.on {
+  color: #f0d24a;
+}
