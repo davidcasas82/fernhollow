@@ -1,0 +1,2559 @@
+import {
+  AFTERIMAGE_MAX,
+  AIM_RETICLE_DIST,
+  COLORS,
+  DEATH_MULT_KEEP,
+  DEATH_MULT_KEEP_CAP,
+  EXTRA_BOMB_EVERY,
+  EXTRA_LIFE_EVERY,
+  EXTRA_LIFE_SCALE,
+  MAX_BOMBS,
+  MAX_LIVES,
+  FIRE_COOLDOWN,
+  LEVEL_DURATION_SEC,
+  FIRE_COOLDOWN_MIN,
+  FIRE_SPREAD,
+  MULT_FOR_DUAL,
+  BOARD_CLEAR_BASE,
+  BOARD_CLEAR_PER_MULT,
+  BOARD_CLEAR_PROGRESS,
+  GEOM_MULT,
+  GEOM_VACUUM_MILESTONES,
+  GFX,
+  applyGfxQuality,
+  resolveGfxQuality,
+  GRID_IMPULSE_MAX,
+  HS_KEY,
+  INVULN_MS,
+  MAX_ENEMIES,
+  RESPAWN_CLEAR_RADIUS,
+  RESPAWN_ENEMY_SOFT_FRAC,
+  RESPAWN_FREEZE_MS,
+  RESPAWN_INVULN_MS,
+  RESPAWN_SPAWN_PAUSE,
+  START_INVULN_MS,
+  MULT_DECAY_INTERVAL,
+  MULT_FOR_TRIPLE,
+  MULT_IDLE_BEFORE_DECAY,
+  MORPH,
+  MULT_MAX,
+  PHRASE,
+  SAFE_OPENING_SEC,
+  SOFT_CAP,
+  SPAWN_INTERVAL_MIN,
+  SPAWN_INTERVAL_START,
+  SPAWN_RAMP_SECONDS,
+  SPAWN_TABLE,
+  SPAWN_LATE_AT,
+  SPAWN_LATE_WEIGHTS,
+  BOSS_BOMB_CHIP,
+  START_BOMBS,
+  START_LIVES,
+  WAVE_LULL_MIN,
+  WAVE_LULL_START,
+  WORLD_H,
+  WORLD_W,
+} from "./constants.js";
+import { AudioBus } from "./audio.js";
+import {
+  createArena,
+  createDefaultArena,
+  drawArena,
+  drawMorphDanger,
+  hitsSolid,
+  randomPlayablePoint,
+} from "./arenas.js";
+import {
+  createBullet,
+  createGeom,
+  createPlayer,
+  pickSpawnType,
+  setEntityArena,
+  snakeSegments,
+  spawnEnemy,
+  spawnSplitterChildren,
+  updateBullets,
+  updateEnemies,
+  updateGeoms,
+  updatePlayer,
+} from "./entities.js";
+import {
+  addTrauma,
+  applyCameraTransform,
+  createCamera,
+  punchZoom,
+  recoil,
+  resetCamera,
+  updateCamera,
+  updateMenuCamera,
+} from "./camera.js";
+import { Input } from "./input.js";
+import { ParticleSystem } from "./particles.js";
+import { circlesOverlap } from "./physics.js";
+import {
+  dumpRunsToConsole,
+  formatRunsSummary,
+  getRecentRuns,
+  recordDeath,
+  recordRun,
+} from "./runs.js";
+import { computeStars, getLevel, getLevelTheme } from "./levels.js";
+import { createModeController } from "./modes.js";
+import { buildPhrase, filterJobsNearPlayer } from "./spawns.js";
+import {
+  drawAfterimages,
+  drawAimReticle,
+  drawBombFlash,
+  drawBullets,
+  drawEnemies,
+  drawFloorShadows,
+  drawGeoms,
+  drawGrid,
+  drawPlayer,
+  drawCheckpoints,
+  enemyIsOutline,
+} from "./render.js";
+import {
+  compositeBloom,
+  compositeChromatic,
+  drawColorGrade,
+  drawPostVignette,
+  technoPulse,
+} from "./postfx.js";
+
+export class Game {
+  constructor(canvas, ui) {
+    this.canvas = canvas;
+    this.ctx =
+      canvas.getContext("2d", { alpha: false, desynchronized: true }) ||
+      canvas.getContext("2d", { alpha: false }) ||
+      canvas.getContext("2d");
+    this.ui = ui;
+
+    /** @type {number} */
+    this.dpr = 1;
+    /**
+     * Presentation buffers (browser only). Node UAT has no `document` —
+     * buffers stay null and _draw no-ops the post path safely.
+     */
+    this.worldCanvas = null;
+    this.worldCtx = null;
+    this.bloomTight = null;
+    this.bloomWide = null;
+    this._initPresentationBuffers();
+
+    this.state = "menu";
+    this.player = createPlayer();
+    this.bullets = [];
+    this.enemies = [];
+    this.geoms = [];
+    this.gridImpulses = [];
+    this.particles = new ParticleSystem();
+    this.audio = new AudioBus();
+
+    this.score = 0;
+    this.best = Number(localStorage.getItem(HS_KEY) || 0);
+    this.lives = START_LIVES;
+    this.bombs = START_BOMBS;
+    this.mult = 1; // integer geom mult (GW RE2-style economy)
+    this.multIdle = 0;
+    this.multDecayAcc = 0;
+    this.elapsed = 0;
+    this.spawnTimer = 0.3;
+    this.waveLeft = 0;
+    /** @type {import('./spawns.js').SpawnJob[]} */
+    this.spawnQueue = [];
+    /** @type {import('./spawns.js').SpawnJob[][]} remaining beats in active phrase */
+    this.phraseBeats = [];
+    /** @type {string|null} */
+    this.phraseTag = null;
+    this.phraseLullScale = 1;
+    /** First-unlock set pieces already shown this run */
+    this.seenIntros = new Set();
+    this.lastCircleAt = -999;
+    this.lastFloodAt = -999;
+    this.cam = createCamera();
+    this.bombFlash = 0;
+    this.nextLifeAt = EXTRA_LIFE_EVERY;
+    this.nextBombAt = EXTRA_BOMB_EVERY;
+    /** How many extra lives granted this run (escalating cost) */
+    this.livesAwarded = 0;
+    /** Unmultiplied progress for life/bomb awards (not display score) */
+    this.progress = 0;
+    this.peakMult = 1;
+    this.deathCount = 0;
+    this.afterimages = [];
+    this.afterimageTimer = 0;
+    this.time = 0;
+    this.lastTime = 0;
+    this.raf = 0;
+
+    this.display = { left: 0, top: 0, width: WORLD_W, height: WORLD_H, scale: 1 };
+
+    this.input = new Input(canvas);
+
+    this._onResize = () => this.fitCanvas();
+    window.addEventListener("resize", this._onResize);
+    this.fitCanvas();
+
+    this.level = 1;
+    this.levelTimer = 0;
+    this.geomVacuum = 0;
+    this.nextVacuumAt = GEOM_VACUUM_MILESTONES[0] || 5;
+    this.boardWasPopulated = false;
+    this.clearCooldown = 0;
+
+    // ── Path shell (null = Classic Evolved endless) ────────
+    /** @type {"classic"|"path"} */
+    this.shell = "classic";
+    /** @type {import('./levels.js').LevelDef | null} */
+    this.pathLevel = null;
+    /** @type {ReturnType<typeof createModeController> | null} */
+    this.mode = null;
+/** @type {object | null} arena instance from arenas.js */
+    this.arena = createDefaultArena();
+    /** @type {{ w: number, h: number }} */
+    this.world = { w: this.arena.worldW, h: this.arena.worldH };
+    setEntityArena(this.arena);
+    /** @type {Set<string>} */
+    this.modeFlags = new Set();
+    this.pathAllowImprov = true;
+    this.pathScriptOnly = false;
+    this.pathEnding = false;
+    this.pathBossAlive = false;
+    this.pathBossKilled = false;
+    this._pathBossSeen = false;
+    this.pathOnTimeGates = 0;
+    /** Optional path rule overrides applied while pathLevel is set */
+    this.pathSoftCap = null;
+    this.pathSpawnRampSec = null;
+    this.pathSafeOpeningSec = null;
+    this.pathEnemyUnlockScale = null;
+    this.pathMaxEnemies = null;
+    this.pathScoreMult = 1;
+
+    this.ui.updateScore(0);
+    this.ui.updateMult(1);
+    this.ui.updateLives(START_LIVES);
+    this.ui.updateBombs?.(START_BOMBS);
+    this.ui.updateBest(this.best);
+    this.ui.updateLevel?.(1);
+    this.ui.updateGun?.(1);
+
+    this._loop = this._loop.bind(this);
+    this.raf = requestAnimationFrame(this._loop);
+  }
+
+  _initPresentationBuffers() {
+    if (typeof document === "undefined" || !document.createElement) return;
+    if (!this.worldCanvas) {
+      this.worldCanvas = document.createElement("canvas");
+      this.worldCtx =
+        this.worldCanvas.getContext("2d", { alpha: false }) ||
+        this.worldCanvas.getContext("2d");
+    }
+    if (!this.bloomTight) this.bloomTight = document.createElement("canvas");
+    if (!this.bloomWide) this.bloomWide = document.createElement("canvas");
+  }
+
+  /**
+   * Re-resolve presentation quality (mobile low / desktop high) and refit buffers.
+   * Safe to call on resize, orientation change, or console override.
+   * @param {"high"|"low"} [tier] optional forced tier for this call only
+   */
+  setGfxQuality(tier) {
+    if (tier === "high" || tier === "low") GFX.QUALITY_FORCE = tier;
+    else GFX.QUALITY_FORCE = null; // auto / undefined clears sticky override
+    this.fitCanvas();
+    return GFX.QUALITY;
+  }
+
+  fitCanvas() {
+    // Keep quality flags in sync with device / force override
+    applyGfxQuality(resolveGfxQuality());
+    // High path needs offscreen + bloom scratch; low path draws to the visible canvas only
+    if (GFX.USE_OFFSCREEN_WORLD || GFX.ENABLE_BLOOM) this._initPresentationBuffers();
+
+    const wrap = this.canvas.parentElement;
+    const touchUi =
+      typeof document !== "undefined" &&
+      document.body?.classList?.contains("touch-ui");
+
+    // Desktop: slight pad so stage border glow still shows.
+    // Touch: edge-to-edge cover-fit (fill width+height; crop letterbox bars).
+    const pad = touchUi ? 0 : 4;
+    const maxW = Math.max(320, (wrap ? wrap.clientWidth : window.innerWidth) - pad);
+    const maxH = Math.max(180, (wrap ? wrap.clientHeight : window.innerHeight) - pad);
+    const scale = touchUi
+      ? Math.max(maxW / WORLD_W, maxH / WORLD_H)
+      : Math.min(maxW / WORLD_W, maxH / WORLD_H);
+    const cssW = Math.floor(WORLD_W * scale);
+    const cssH = Math.floor(WORLD_H * scale);
+    this.canvas.style.width = `${cssW}px`;
+    this.canvas.style.height = `${cssH}px`;
+
+    // Retina / HiDPI backing store (capped; lower on mobile quality + touch UI)
+    const touchCap = GFX.TOUCH_MAX_DPR ?? 1.25;
+    const dprCap = touchUi ? Math.min(GFX.MAX_DPR, touchCap) : GFX.MAX_DPR;
+    const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
+    this.dpr = dpr;
+    const bw = Math.max(1, Math.round(WORLD_W * dpr));
+    const bh = Math.max(1, Math.round(WORLD_H * dpr));
+
+    if (this.canvas.width !== bw) this.canvas.width = bw;
+    if (this.canvas.height !== bh) this.canvas.height = bh;
+
+    // Offscreen world only when the high-quality post path needs a source buffer
+    if (GFX.USE_OFFSCREEN_WORLD && this.worldCanvas) {
+      if (this.worldCanvas.width !== bw) this.worldCanvas.width = bw;
+      if (this.worldCanvas.height !== bh) this.worldCanvas.height = bh;
+    } else if (this.worldCanvas) {
+      // Release GPU memory on the mobile path
+      if (this.worldCanvas.width !== 0) this.worldCanvas.width = 0;
+      if (this.worldCanvas.height !== 0) this.worldCanvas.height = 0;
+    }
+
+    if (GFX.ENABLE_BLOOM && this.bloomTight && this.bloomWide) {
+      const tw = Math.max(2, Math.round(WORLD_W * dpr * GFX.BLOOM_RES));
+      const th = Math.max(2, Math.round(WORLD_H * dpr * GFX.BLOOM_RES));
+      if (this.bloomTight.width !== tw) this.bloomTight.width = tw;
+      if (this.bloomTight.height !== th) this.bloomTight.height = th;
+
+      const ww = Math.max(2, Math.round(WORLD_W * dpr * GFX.BLOOM_WIDE_RES));
+      const wh = Math.max(2, Math.round(WORLD_H * dpr * GFX.BLOOM_WIDE_RES));
+      if (this.bloomWide.width !== ww) this.bloomWide.width = ww;
+      if (this.bloomWide.height !== wh) this.bloomWide.height = wh;
+    } else {
+      // Drop bloom scratch buffers when unused
+      if (this.bloomTight && this.bloomTight.width !== 0) this.bloomTight.width = 0;
+      if (this.bloomTight && this.bloomTight.height !== 0) this.bloomTight.height = 0;
+      if (this.bloomWide && this.bloomWide.width !== 0) this.bloomWide.width = 0;
+      if (this.bloomWide && this.bloomWide.height !== 0) this.bloomWide.height = 0;
+    }
+
+    const rect = this.canvas.getBoundingClientRect();
+    // Cover-fit may CSS-crop the canvas; camera needs the visible fraction
+    const wrapW = wrap ? wrap.clientWidth : rect.width;
+    const wrapH = wrap ? wrap.clientHeight : rect.height;
+    const visFracX = Math.min(1, wrapW / Math.max(1, cssW || rect.width));
+    const visFracY = Math.min(1, wrapH / Math.max(1, cssH || rect.height));
+    this.display = {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      scale,
+      dpr,
+      visFracX,
+      visFracY,
+      wrapW,
+      wrapH,
+      quality: GFX.QUALITY,
+    };
+  }
+
+start(opts = {}) {
+    // Classic Evolved endless — never gated by Path
+    this._clearPathRuntime();
+    this.shell = "classic";
+    this.setArena({ topology: "rect" });
+    this._resetMorphRuntime();
+    this.score = 0;
+    this.lives = START_LIVES;
+    this.bombs = START_BOMBS;
+    this.mult = 1;
+    this.multIdle = 0;
+    this.multDecayAcc = 0;
+    this.elapsed = 0;
+    this.level = 1;
+    this.levelTimer = 0;
+    this.geomVacuum = 0;
+    this.nextVacuumAt = GEOM_VACUUM_MILESTONES[0] || 5;
+    this.boardWasPopulated = false;
+    this.clearCooldown = 0;
+    this.spawnTimer = 1.2; // first enemies after a beat
+    this.waveLeft = 0;
+    this.spawnQueue = [];
+    this.phraseBeats = [];
+    this.phraseTag = null;
+    this.phraseLullScale = 1;
+    this.seenIntros = new Set();
+    this.lastCircleAt = -999;
+    this.lastFloodAt = -999;
+    this.bombFlash = 0;
+    this.nextLifeAt = EXTRA_LIFE_EVERY;
+    this.nextBombAt = EXTRA_BOMB_EVERY;
+    this.prevLifeAt = 0;
+    this.prevBombAt = 0;
+    this.livesAwarded = 0;
+    this.progress = 0;
+    this._streamAnnounced = 0;
+    this._wrapTaught = false;
+    this.peakMult = 1;
+    this.deathCount = 0;
+    this.afterimages = [];
+    this.afterimageTimer = 0;
+    this.time = 0;
+    this.bullets = [];
+    this.enemies = [];
+    this.geoms = [];
+    this.gridImpulses = [];
+    this.particles.clear();
+    this.player = createPlayer();
+    resetCamera(this.cam);
+    // Opening mercy invincibility (shmup/GW-style spawn protection)
+    this.player.invuln = START_INVULN_MS;
+    this.player.controlLock = 0;
+    this.input.resetAim();
+    this.input.clearFireButton();
+    this.input.clearEdgeActions();
+    this.state = "playing";
+    this.audio.ensure();
+    this.audio.start();
+    if (!opts.skipBgm) {
+      this.audio.playLevelTheme(1, { restart: true });
+    }
+    this.ui.hideOverlay();
+    this.ui.updateScore(0);
+    this.ui.updateMult(1);
+    this.ui.updateLives(this.lives);
+    this.ui.updateBombs?.(this.bombs);
+    this.ui.updateLevel?.(1);
+    this._pushEconomyHud();
+    this.fitCanvas();
+    this.input.requestPointerLock();
+    // Brief thruster intro so PLAY feels like the ship wakes up
+    this._playShipIntro();
+  }
+
+  /** One-shot thruster + grid punch when a run begins from the title. */
+  _playShipIntro() {
+    const px = this.player.x;
+    const py = this.player.y;
+    this.particles.burst(px, py, COLORS.player, 28, 220);
+    this.particles.burst(px, py, COLORS.playerCore, 12, 140);
+    this.particles.ring(px, py, COLORS.playerGlow, 36, 280);
+    this._gridPulse(px, py, 1.4);
+    addTrauma(this.cam, 0.12, { big: true });
+    punchZoom(this.cam, 0.05);
+    this.particles.floater(px, py - 40, "GO", COLORS.player, 1.2);
+  }
+
+  /** Reset Path-only runtime fields without touching Classic combat state. */
+  _clearPathRuntime() {
+    this.pathLevel = null;
+    this.mode = null;
+this.modeFlags = new Set();
+    this.pathAllowImprov = true;
+    this.pathScriptOnly = false;
+    this.pathEnding = false;
+    this.pathBossAlive = false;
+    this.pathBossKilled = false;
+    this._pathBossSeen = false;
+    this.pathOnTimeGates = 0;
+    this.pathCheckpoints = null;
+    this.pathCheckpointIndex = 0;
+    this.pathSoftCap = null;
+    this.pathSpawnRampSec = null;
+    this.pathSafeOpeningSec = null;
+    this.pathEnemyUnlockScale = null;
+    this.pathMaxEnemies = null;
+    this.pathScoreMult = 1;
+    this.pathWaveId = null;
+    this._resetMorphRuntime();
+  }
+
+  /** Classic morph state (Sektori arena pressure). Path leaves this idle. */
+  _resetMorphRuntime() {
+    this.morphIndex = 0;
+    this.morphTimer = MORPH.FIRST_AT;
+    this.morphWarn = false;
+    this.morphWarnT = 0;
+    this.morphNextRef = null;
+    this.morphNextArena = null;
+    this.morphFlash = 0;
+    this.morphResidue = [];
+  }
+
+/**
+ * Apply arena topology for Classic (default rect) or Path levels.
+ * @param {{ topology?: string, params?: object } | null | undefined} arenaRef
+ */
+  setArena(arenaRef) {
+    const arena = createArena(arenaRef || { topology: "rect" });
+    if (this.morphResidue && this.morphResidue.length) {
+      arena.residue = this.morphResidue;
+    }
+    this.arena = arena;
+    this.world = { w: arena.worldW, h: arena.worldH };
+    setEntityArena(arena);
+    return arena;
+  }
+
+  _shoveIntoPlayable() {
+    if (!this.arena) return;
+    if (this.player && hitsSolid(this.arena, this.player.x, this.player.y, this.player.r)) {
+      try {
+        const pt = randomPlayablePoint(this.arena, Math.random, this.player.r || 13);
+        if (pt) {
+          this.player.x = pt.x;
+          this.player.y = pt.y;
+        }
+      } catch {
+        /* keep */
+      }
+    }
+    for (const e of this.enemies || []) {
+      if (e.dead) continue;
+      if (hitsSolid(this.arena, e.x, e.y, e.r || 10)) {
+        try {
+          const pt = randomPlayablePoint(this.arena, Math.random, e.r || 10);
+          if (pt) {
+            e.x = pt.x;
+            e.y = pt.y;
+          }
+        } catch {
+          /* keep */
+        }
+      }
+    }
+  }
+
+  /**
+   * Leave ink posts in the newly committed shape (Tormentor-style residue).
+   * Posts last until the next morph. Never spawn on the ship.
+   */
+  _seedMorphResidue(prevArena, nextArena) {
+    this.morphResidue = [];
+    const next = nextArena;
+    if (!next || !MORPH.RESIDUE_COUNT) return;
+    const n = Math.max(0, MORPH.RESIDUE_COUNT | 0);
+    const r = Math.max(16, MORPH.RESIDUE_RADIUS || 30);
+    const px = this.player?.x ?? next.cx;
+    const py = this.player?.y ?? next.cy;
+    const posts = [];
+    for (let i = 0; i < 24 && posts.length < n; i++) {
+      let pt = null;
+      try {
+        pt = randomPlayablePoint(next, Math.random, r + 4);
+      } catch {
+        pt = null;
+      }
+      if (!pt) continue;
+      if (Math.hypot(pt.x - px, pt.y - py) < 160) continue;
+      if (posts.some((p) => Math.hypot(p.x - pt.x, p.y - pt.y) < r * 3)) continue;
+      posts.push({ x: pt.x, y: pt.y, r });
+    }
+    this.morphResidue = posts;
+  }
+
+  /**
+   * Checkpoint gate: local clear, no score, no bomb spend (GW Pacifism DNA).
+   */
+  _gatePulse(x, y, r = 70) {
+    const radius = Math.max(140, (r || 70) * 2.4);
+    this.particles.shockwave(x, y, COLORS.playerGlow || "#2fd39a", radius);
+    this.particles.ring(x, y, COLORS.playerGlow || "#2fd39a", 24, radius);
+    this._gridPulse(x, y, 2.6);
+    this.audio.extraBomb();
+    for (const e of this.enemies) {
+      if (e.pathBoss || e.boss) continue;
+      if (Math.hypot(e.x - x, e.y - y) > radius) continue;
+      e.dead = true;
+      this._onKill(e, { fromBomb: true });
+    }
+    this.enemies = this.enemies.filter((e) => !e.dead);
+  }
+
+  /** Path boss-lite phase change: pinch the floor, then dash. */
+  _setBossPhase(phase) {
+    this.pathBossPhase = phase | 0;
+    const boss = (this.enemies || []).find((e) => e.pathBoss || e.boss);
+    if (phase === 2) {
+      this.setArena({
+        topology: "rect_wide",
+        params: { width: 1180, height: 460 },
+      });
+      this._shoveIntoPlayable();
+      this.particles.floater(
+        this.player.x,
+        this.player.y - 64,
+        "PINCH",
+        COLORS.danger,
+        1.3
+      );
+    }
+    if (phase === 3 && boss) {
+      boss.bossDash = true;
+      boss.speed = (boss.speed || 54) * 1.2;
+      this.particles.floater(
+        this.player.x,
+        this.player.y - 64,
+        "RAGE",
+        COLORS.danger,
+        1.3
+      );
+    }
+    this.audio.levelUp?.();
+  }
+
+  /**
+   * Classic-only: warn → commit topology morph with red danger zones.
+   * Caught outside next playable = death (after warn).
+   */
+  _tickMorph(dt) {
+    if (!MORPH.ENABLED_CLASSIC) return;
+    if (this.pathLevel) return; // Path stays authored/static
+    if (this.state !== "playing") return;
+
+    if (this.morphFlash > 0) this.morphFlash = Math.max(0, this.morphFlash - dt);
+
+    if (this.morphWarn) {
+      this.morphWarnT += dt;
+      const warnSec = Math.max(0.6, MORPH.WARN_SEC || 2);
+      if (this.morphWarnT >= warnSec) {
+        this._commitMorph();
+      }
+      return;
+    }
+
+    this.morphTimer -= dt;
+    if (this.morphTimer > 0) return;
+
+    // Begin warn for next shape
+    const shapes = MORPH.SHAPES || [{ topology: "rect" }];
+    this.morphIndex = (this.morphIndex + 1) % shapes.length;
+    const ref = shapes[this.morphIndex] || { topology: "rect" };
+    this.morphNextRef = ref;
+    this.morphNextArena = createArena(ref);
+    this.morphWarn = true;
+    this.morphWarnT = 0;
+    this.particles.floater(
+      this.player.x,
+      this.player.y - 56,
+      "SHIFT",
+      COLORS.danger,
+      1.25
+    );
+    this.audio.enemyHit?.();
+  }
+
+  _commitMorph() {
+    const nextRef = this.morphNextRef || { topology: "rect" };
+    this._seedMorphResidue(this.arena, this.morphNextArena);
+    this.setArena(nextRef);
+    this._shoveIntoPlayable();
+    if (this.arena?.topology === "wrap_torus" && !this._wrapTaught) {
+      this._wrapTaught = true;
+      this.particles.floater(
+        this.player.x,
+        this.player.y - 72,
+        "WRAP — EDGES ARE DOORS",
+        COLORS.player,
+        1.2
+      );
+    }
+    this.morphWarn = false;
+    this.morphWarnT = 0;
+    this.morphNextRef = null;
+    this.morphNextArena = null;
+    this.morphTimer = Math.max(6, MORPH.INTERVAL || 12);
+    this.morphFlash = 0.45;
+    this.bombFlash = Math.max(this.bombFlash, 0.18);
+    this._gridPulse(this.player.x, this.player.y, 2.2);
+    addTrauma(this.cam, 0.28, { big: true });
+    punchZoom(this.cam, 0.05);
+    this.particles.floater(
+      this.player.x,
+      this.player.y - 48,
+      "LOCKED",
+      COLORS.player,
+      1.1
+    );
+
+    // Instant death if still outside after lock (Sektori trap rule)
+    // Mercy: if invuln/control lock, shove into playable instead
+    if (this.arena && hitsSolid(this.arena, this.player.x, this.player.y, this.player.r)) {
+      if (this.player.invuln > 0 || this.player.controlLock > 0) {
+        try {
+          const pt = randomPlayablePoint(this.arena, Math.random, this.player.r || 13);
+          if (pt) {
+            this.player.x = pt.x;
+            this.player.y = pt.y;
+          }
+        } catch {
+          /* keep */
+        }
+      } else {
+        this.particles.floater(
+          this.player.x,
+          this.player.y - 70,
+          "CRUSHED",
+          COLORS.danger,
+          1.35
+        );
+        this._playerHit("CRUSHED");
+      }
+    }
+
+    // Shove enemies that got walled into playable so they don't stuck-clip
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      if (hitsSolid(this.arena, e.x, e.y, e.r * 0.5)) {
+        try {
+          const pt = randomPlayablePoint(this.arena, Math.random, e.r || 10);
+          if (pt) {
+            e.x = pt.x;
+            e.y = pt.y;
+          }
+        } catch {
+          /* keep */
+        }
+      }
+    }
+  }
+
+  /** @returns {import('./modes.js').ModeContext} */
+  _modeContext() {
+    const rules = this.pathLevel?.rules || {};
+    const duration = Number(rules.durationSec);
+    let durationLeft = Infinity;
+    if (Number.isFinite(duration) && duration > 0) {
+      // Deadline counts down; other modes still expose remaining window when set
+      durationLeft = Math.max(0, duration - this.elapsed);
+    }
+    return {
+      game: this,
+      level: this.pathLevel,
+      arena: this.arena || createDefaultArena(),
+      elapsed: this.elapsed,
+      durationLeft,
+      flags: this.modeFlags,
+    };
+  }
+
+  /**
+   * Start an Arena Path level. Accepts LevelDef or level id string.
+   * Does not alter Classic start() endless behavior.
+   * @param {import('./levels.js').LevelDef | string} levelDefOrId
+   */
+  startLevel(levelDefOrId) {
+    const level =
+      typeof levelDefOrId === "string"
+        ? getLevel(levelDefOrId)
+        : levelDefOrId && typeof levelDefOrId === "object"
+          ? levelDefOrId
+          : null;
+    if (!level || !level.id) {
+      console.warn("[arena:path] startLevel: unknown level", levelDefOrId);
+      return false;
+    }
+
+    // Shared run reset via classic start, then overlay Path config
+    this.start({ skipBgm: true });
+    this.shell = "path";
+    this.pathLevel = level;
+    this.pathEnding = false;
+    this.modeFlags = new Set();
+    // Path keeps authored topology — no Classic morph pressure
+    this._resetMorphRuntime();
+    this.morphTimer = 1e9;
+
+    const rules = level.rules || {};
+    this.lives = rules.lives != null ? Number(rules.lives) : START_LIVES;
+    this.bombs = rules.bombs != null ? Number(rules.bombs) : START_BOMBS;
+    this.pathSoftCap = rules.softCap != null ? Number(rules.softCap) : null;
+    this.pathSpawnRampSec =
+      rules.spawnRampSec != null ? Number(rules.spawnRampSec) : null;
+    this.pathSafeOpeningSec =
+      rules.safeOpeningSec != null ? Number(rules.safeOpeningSec) : null;
+    this.pathEnemyUnlockScale =
+      rules.enemyUnlockScale != null ? Number(rules.enemyUnlockScale) : null;
+    this.pathMaxEnemies =
+      rules.maxEnemies != null ? Number(rules.maxEnemies) : null;
+    this.pathScoreMult =
+      rules.scoreMult != null && Number(rules.scoreMult) > 0
+        ? Number(rules.scoreMult)
+        : 1;
+
+    this.setArena(level.arena || { topology: "rect" });
+    // Re-center player in playable space after topology change
+    try {
+      const pt = randomPlayablePoint(this.arena, Math.random, this.player.r || 13);
+      if (pt) {
+        this.player.x = pt.x;
+        this.player.y = pt.y;
+      }
+    } catch {
+      /* keep center */
+    }
+    this.mode = createModeController(level.mode);
+    this.ui.updateLives(this.lives);
+    this.ui.updateBombs?.(this.bombs);
+    // Path UI: show order / name instead of Evolved stage counter when available
+    this.ui.updateLevel?.(level.order || 1);
+    this.ui.updatePathLevel?.(level);
+    this.ui.updateObjective?.("");
+    this.ui.updateTimer?.("");
+
+    this.audio.playTheme(getLevelTheme(level), { restart: true });
+
+    if (this.arena?.topology === "wrap_torus") {
+      this._wrapTaught = true;
+      this.particles.floater(
+        this.player.x,
+        this.player.y - 64,
+        "WRAP — EDGES ARE DOORS",
+        COLORS.player,
+        1.25
+      );
+    }
+
+    const ctx = this._modeContext();
+    this.mode.onEnter(ctx);
+    this._pushPathHud();
+    return true;
+  }
+
+  /** Alias for path-ui stubs. */
+  startPathLevel(levelDefOrId) {
+    return this.startLevel(levelDefOrId);
+  }
+
+  _pushPathHud() {
+    if (!this.mode || !this.pathLevel) return;
+    const hud = this.mode.getHud(this._modeContext()) || {};
+    if (hud.objective != null) this.ui.updateObjective?.(hud.objective);
+    if (hud.timer != null) this.ui.updateTimer?.(hud.timer);
+    if (hud.label != null) this.ui.updatePathLabel?.(hud.label);
+    if (hud.wave != null) this.ui.updateWave?.(hud.wave);
+  }
+
+  /**
+   * Finish Path run: stars + UI callback. Does not use Classic gameOver chrome
+   * when cleared; lose still avoids Classic high-score panel via onPathResult.
+   * @param {"won"|"lost"} outcome
+   */
+  endPathLevel(outcome = "lost") {
+    if (!this.pathLevel || this.pathEnding) return;
+    this.pathEnding = true;
+
+    const cleared = outcome === "won";
+    const ctx = this._modeContext();
+    const extra = this.mode
+      ? this.mode.buildResult(ctx)
+      : { cleared: false, elapsedSec: this.elapsed };
+    extra.cleared = cleared;
+    if (extra.elapsedSec == null) extra.elapsedSec = this.elapsed;
+    if (extra.peakMult == null) extra.peakMult = this.peakMult;
+    if (extra.livesLeft == null) extra.livesLeft = Math.max(0, this.lives);
+    if (extra.onTimeGates == null && this.pathOnTimeGates != null) {
+      extra.onTimeGates = this.pathOnTimeGates;
+    }
+    extra.mode = this.pathLevel.mode;
+
+    const stars = computeStars(this.pathLevel, this.score, extra);
+    const result = {
+      levelId: this.pathLevel.id,
+      level: this.pathLevel,
+      score: this.score,
+      stars,
+      cleared,
+      outcome,
+      elapsedSec: extra.elapsedSec,
+      peakMult: extra.peakMult,
+      livesLeft: extra.livesLeft,
+      timeLeftSec: extra.timeLeftSec,
+      onTimeGates: extra.onTimeGates,
+      extra,
+    };
+
+    this.state = cleared ? "path_clear" : "path_fail";
+    this.input.exitPointerLock();
+    if (cleared) {
+      this.audio.levelUp?.();
+    } else {
+      this.audio.gameOver?.();
+    }
+
+    // path-ui owns chrome; prefer onPathResult / showPathResult stubs
+    if (typeof this.ui.onPathResult === "function") {
+      this.ui.onPathResult(result);
+    } else if (typeof this.ui.showPathResult === "function") {
+      this.ui.showPathResult(result);
+    } else {
+      // Minimal fallback so runs aren't stuck without path-ui
+      const title = cleared ? "PATH CLEAR" : "PATH FAIL";
+      const body = `${this.pathLevel.name}\nScore ${this.score.toLocaleString()} · ★${stars}`;
+      this.ui.showOverlay?.(title, body, false, "Path", () => this.returnToMenu(), {
+        showTitle: true,
+        onTitle: () => this.returnToMenu(),
+      });
+    }
+
+    console.info("[arena:path-result]", {
+      id: result.levelId,
+      stars,
+      score: result.score,
+      cleared,
+      elapsed: result.elapsedSec,
+    });
+  }
+
+  /** @param {number} dt */
+  _tickPathMode(dt) {
+    if (!this.pathLevel || !this.mode || this.pathEnding) return;
+    if (this.state !== "playing") return;
+    const ctx = this._modeContext();
+    this.mode.onUpdate(ctx, dt);
+    this._pushPathHud();
+    const st = this.mode.getState(ctx);
+    if (st === "won" || st === "lost") {
+      this.endPathLevel(st);
+    }
+  }
+
+  pause() {
+    if (this.state !== "playing") return;
+    this.state = "paused";
+    this.input.exitPointerLock();
+    this.audio.pauseBgm();
+    // Primary Resume + pause help deep-link (same how-to content as title)
+    this.ui.showOverlay(
+      "Paused",
+      "Take a breath. The shapes can wait.",
+      false,
+      "Resume",
+      () => this.resume(),
+      { showHelp: true }
+    );
+  }
+
+  resume() {
+    if (this.state !== "paused") return;
+    this.state = "playing";
+    this.input.clearFireButton();
+    this.input.clearEdgeActions();
+    this.ui.hideOverlay();
+    this.lastTime = performance.now();
+    this.audio.resumeBgm();
+    this.input.requestPointerLock();
+  }
+
+  /** Soft exit to live-grid title (from game over Title button). */
+  returnToMenu() {
+    this._clearPathRuntime();
+    this.shell = "classic";
+    this.state = "menu";
+    this.input.exitPointerLock();
+    this.input.clearFireButton();
+    this.input.clearEdgeActions();
+    this.audio.stopBgm();
+    this.bullets = [];
+    this.enemies = [];
+    this.geoms = [];
+    this.gridImpulses = [];
+    this.spawnQueue = [];
+    this.phraseBeats = [];
+    this.phraseTag = null;
+    this.phraseLullScale = 1;
+    this.seenIntros = new Set();
+    this.lastCircleAt = -999;
+    this.lastFloodAt = -999;
+    this.waveLeft = 0;
+    this.bombFlash = 0;
+    this.afterimages = [];
+    this.geomVacuum = 0;
+    this.particles.clear();
+    this.player = createPlayer();
+    resetCamera(this.cam);
+    this.ui.updateScore(0);
+    this.ui.updateMult(1);
+    this.ui.updateLives(START_LIVES);
+    this.ui.updateBombs?.(START_BOMBS);
+    this.ui.updateLevel?.(1);
+    this.ui.showTitleMenu?.();
+  }
+
+  /**
+   * Title-screen geom rain — drift + mild ship magnet, no mult awards.
+   * Keeps pickups readable without competing with the PLAY CTA.
+   */
+  _updateMenuGeoms(dt) {
+    for (let i = this.geoms.length - 1; i >= 0; i--) {
+      const g = this.geoms[i];
+      g.life -= dt;
+      // Gentle pull toward the idle ship so rain clusters a little
+      const dx = this.player.x - g.x;
+      const dy = this.player.y - g.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < 220 * 220 && d2 > 1) {
+        const d = Math.sqrt(d2);
+        g.vx += (dx / d) * 28 * dt;
+        g.vy += (dy / d) * 28 * dt;
+      }
+      g.vx *= 0.992;
+      g.vy = Math.min(140, g.vy + 18 * dt);
+      g.x += g.vx * dt;
+      g.y += g.vy * dt;
+      if (
+        g.life <= 0 ||
+        g.y > WORLD_H + 40 ||
+        g.x < -40 ||
+        g.x > WORLD_W + 40
+      ) {
+        this.geoms.splice(i, 1);
+      }
+    }
+  }
+
+  _advanceLevel() {
+    this.level += 1;
+    this.levelTimer = 0;
+    this.ui.updateLevel?.(this.level);
+    this.audio.levelUp();
+    // Same run — keep the bed playing. Restarting every 50s felt like a new stage.
+    this.audio.playLevelTheme(this.level, { restart: false });
+    this.particles.floater(
+      this.player.x,
+      this.player.y - 36,
+      `HEAT ${this.level}`,
+      COLORS.player,
+      1.35
+    );
+    addTrauma(this.cam, 0.16, { big: true });
+    punchZoom(this.cam, 0.04);
+    this._gridPulse(this.player.x, this.player.y, 1.6);
+    // Tiny spawn poke only — do not grant mercy invuln (that reads as a reset)
+    this.spawnTimer = Math.min(this.spawnTimer, 0.15);
+  }
+
+  toggleMute() {
+    const on = this.audio.toggle();
+    this.ui.setMuteLabel(on);
+  }
+
+  gameOver() {
+    // Path lives-out / mode lose: Path result UI, not Classic high-score sheet
+    if (this.pathLevel && !this.pathEnding) {
+      this.endPathLevel("lost");
+      return;
+    }
+    this.state = "gameover";
+    this.input.exitPointerLock();
+    this.audio.gameOver();
+    if (this.score > this.best) {
+      this.best = this.score;
+      localStorage.setItem(HS_KEY, String(this.best));
+      this.ui.updateBest(this.best);
+    }
+
+    const run = {
+      elapsed: Math.round(this.elapsed),
+      level: this.level,
+      score: this.score,
+      peakMult: this.peakMult,
+      mult: this.mult,
+      deaths: this.deathCount,
+      bombsLeft: this.bombs,
+    };
+    const recent = recordRun(run);
+    dumpRunsToConsole();
+
+    const timeStr =
+      run.elapsed >= 60
+        ? `${Math.floor(run.elapsed / 60)}m ${run.elapsed % 60}s`
+        : `${run.elapsed}s`;
+    const summary = formatRunsSummary(recent.slice(0, 5));
+    // Logo-style game over on the live grid (no boilerplate panel)
+    if (typeof this.ui.showGameOver === "function") {
+      const newBest = this.score >= this.best && this.score > 0;
+      const unusedBombs = this.bombs;
+      const autopsyBits = [];
+      if (newBest) autopsyBits.push("NEW BEST");
+      if (unusedBombs > 0) autopsyBits.push(`${unusedBombs} BOMB${unusedBombs === 1 ? "" : "S"} UNUSED`);
+      if (this.mult > 1) autopsyBits.push(`KEEP ×${this.mult}`);
+      this.ui.showGameOver({
+        score: this.score,
+        best: this.best,
+        peakMult: this.peakMult,
+        timeStr,
+        deaths: this.deathCount,
+        level: this.level,
+        runsSummary: summary,
+        autopsy: autopsyBits.join("  ·  "),
+        newBest,
+        unusedBombs,
+        onAgain: () => this.start(),
+        onTitle: () => this.returnToMenu(),
+      });
+    } else {
+      this.ui.showOverlay(
+        "Game Over",
+        `This run: ${timeStr} · ${this.score.toLocaleString()} · peak ×${this.peakMult} · ${this.deathCount} death(s)\nBest ${this.best.toLocaleString()}\n\nLast runs:\n${summary}`,
+        false,
+        "Play Again",
+        () => this.start(),
+        {
+          showTitle: true,
+          onTitle: () => this.returnToMenu(),
+          showHelp: false,
+        }
+      );
+    }
+  }
+
+  /**
+   * @param {number} points — mult-inflated score for the high-score chase
+   * @param {number} [basePoints] — unmultiplied progress for life/bomb economy
+   */
+  _addScore(points, x, y, basePoints = null) {
+    let award = points;
+    if (this.pathLevel && this.pathScoreMult && this.pathScoreMult !== 1) {
+      award = Math.floor(points * this.pathScoreMult);
+    }
+    this.score += award;
+    this.ui.updateScore(this.score);
+    if (x != null) {
+      this.particles.floater(x, y, `+${award}`, COLORS.playerCore);
+    }
+
+    // Milestone economy uses base progress so high mult can't print free lives
+    const prog = basePoints != null ? basePoints : points;
+    if (prog > 0) {
+      this.progress += prog;
+      this._checkMilestones();
+    }
+  }
+
+  _checkMilestones() {
+    while (this.progress >= this.nextLifeAt) {
+      // Escalating cost: 1st life = base, 2nd = base×scale, 3rd = base×scale²…
+      const interval = Math.floor(
+        EXTRA_LIFE_EVERY * Math.pow(EXTRA_LIFE_SCALE, this.livesAwarded)
+      );
+      this.prevLifeAt = this.nextLifeAt;
+      this.nextLifeAt += Math.max(EXTRA_LIFE_EVERY, interval);
+      this.livesAwarded += 1;
+      if (this.lives < MAX_LIVES) {
+        this.lives += 1;
+        this.ui.updateLives(this.lives);
+        this.audio.extraLife();
+        this.particles.floater(
+          this.player.x,
+          this.player.y - 24,
+          "EXTRA LIFE",
+          COLORS.player
+        );
+      } else {
+        // At cap: convert to score instead of infinite lives
+        this.score += 5000;
+        this.ui.updateScore(this.score);
+        this.particles.floater(
+          this.player.x,
+          this.player.y - 24,
+          "LIFE CAP +5K",
+          COLORS.player
+        );
+      }
+    }
+    while (this.progress >= this.nextBombAt) {
+      this.prevBombAt = this.nextBombAt;
+      this.nextBombAt += EXTRA_BOMB_EVERY;
+      if (this.bombs < MAX_BOMBS) {
+        this.bombs += 1;
+        this.ui.updateBombs?.(this.bombs);
+        this.audio.extraBomb();
+        this.particles.floater(
+          this.player.x,
+          this.player.y - 40,
+          "+BOMB",
+          COLORS.bomb
+        );
+      } else {
+        this.score += 3000;
+        this.ui.updateScore(this.score);
+        this.particles.floater(
+          this.player.x,
+          this.player.y - 40,
+          "BOMB CAP +3K",
+          COLORS.bomb
+        );
+      }
+    }
+    this._pushEconomyHud();
+  }
+
+  _announceStream(prev, next) {
+    const p = Math.max(1, prev | 0);
+    const n = Math.max(1, next | 0);
+    if (p < MULT_FOR_DUAL && n >= MULT_FOR_DUAL && this._streamAnnounced < 1) {
+      this._streamAnnounced = 1;
+      this.particles.floater(
+        this.player.x,
+        this.player.y - 56,
+        "DUAL STREAM",
+        COLORS.player,
+        1.35
+      );
+      this.audio.extraLife?.();
+    }
+    if (p < MULT_FOR_TRIPLE && n >= MULT_FOR_TRIPLE && this._streamAnnounced < 2) {
+      this._streamAnnounced = 2;
+      this.particles.floater(
+        this.player.x,
+        this.player.y - 56,
+        "TRIPLE STREAM",
+        COLORS.geom,
+        1.45
+      );
+      this.audio.levelUp?.();
+    }
+    this.ui.updateGun?.(n);
+  }
+
+  _pushEconomyHud() {
+    const lifeSpan = Math.max(1, this.nextLifeAt - (this.prevLifeAt || 0));
+    const lifeFrac = Math.max(
+      0,
+      Math.min(1, (this.progress - (this.prevLifeAt || 0)) / lifeSpan)
+    );
+    const bombSpan = Math.max(1, this.nextBombAt - (this.prevBombAt || 0));
+    const bombFrac = Math.max(
+      0,
+      Math.min(1, (this.progress - (this.prevBombAt || 0)) / bombSpan)
+    );
+    this.ui.updateEconomy?.({
+      lifeFrac,
+      bombFrac,
+      nextLife: this.nextLifeAt,
+      nextBomb: this.nextBombAt,
+      progress: this.progress,
+    });
+    this.ui.updateGun?.(this.mult);
+  }
+
+  /** Geoms are the only way mult climbs (GW RE2). */
+  _addGeomMult(x, y) {
+    const before = this.mult;
+    this.mult = Math.min(MULT_MAX, this.mult + GEOM_MULT);
+    this.multIdle = 0;
+    this.multDecayAcc = 0;
+    this.ui.updateMult(this.mult);
+    this._announceStream(before, this.mult);
+    if (this.mult <= before) return;
+
+    this.particles.floater(
+      x,
+      y - 8,
+      `×${this.mult}`,
+      COLORS.geom,
+      0.9 + Math.min(0.6, this.mult / 80)
+    );
+
+    // Milestone vacuum: crossed nextVacuumAt
+    if (this.mult >= this.nextVacuumAt) {
+      this._triggerGeomVacuum();
+      const nextMs = GEOM_VACUUM_MILESTONES.find((m) => m > this.mult);
+      this.nextVacuumAt = nextMs != null ? nextMs : this.mult + 100;
+    }
+  }
+
+  /**
+   * Full-map geom vacuum — one of the most addictive GW feelings:
+   * mult hits a beat, every green gem rockets toward you.
+   */
+  _triggerGeomVacuum() {
+    this.geomVacuum = Math.max(this.geomVacuum, 0.85);
+    addTrauma(this.cam, 0.14);
+    punchZoom(this.cam, 0.05);
+    // Inbound electric stream (distinct from kill/bomb ring blasts)
+    this.particles.vacuumInhale(this.player.x, this.player.y, COLORS.geom);
+    this._gridPulse(this.player.x, this.player.y, 1.8);
+    this.particles.floater(
+      this.player.x,
+      this.player.y - 56,
+      "VACUUM",
+      COLORS.geom,
+      1.4
+    );
+    this.audio.geom(this.mult + 20);
+    // Nudge every geom hard toward player immediately
+    for (const g of this.geoms) {
+      const dx = this.player.x - g.x;
+      const dy = this.player.y - g.y;
+      const d = Math.hypot(dx, dy) || 1;
+      g.vx = (dx / d) * 900;
+      g.vy = (dy / d) * 900;
+    }
+  }
+
+  /**
+   * Board clear: kill the last enemy → brief EMPTY + score fireworks.
+   * Core twin-stick dopamine: paint the board, erase it, get paid.
+   */
+  _checkBoardClear() {
+    if (this.clearCooldown > 0) return;
+    if (this.enemies.length > 0) {
+      this.boardWasPopulated = true;
+      return;
+    }
+    if (!this.boardWasPopulated) return;
+    // Need at least a few kills worth of presence
+    this.boardWasPopulated = false;
+    this.clearCooldown = 2.5;
+    const bonus = Math.floor(BOARD_CLEAR_BASE + this.mult * BOARD_CLEAR_PER_MULT);
+    // Tiny base progress — clears must not farm lives
+    this._addScore(bonus, this.player.x, this.player.y - 20, BOARD_CLEAR_PROGRESS);
+    this.particles.floater(
+      this.player.x,
+      this.player.y - 70,
+      "CLEAR!",
+      COLORS.bomb,
+      1.6
+    );
+    this.particles.floater(
+      this.player.x,
+      this.player.y - 95,
+      `+${bonus}`,
+      COLORS.playerCore,
+      1.2
+    );
+    this.particles.ring(this.player.x, this.player.y, COLORS.bomb, 48, 360);
+    this.particles.shockwave(this.player.x, this.player.y, COLORS.player, 320);
+    addTrauma(this.cam, 0.18);
+    punchZoom(this.cam, 0.06);
+    this.audio.levelUp();
+    this.bombFlash = Math.max(this.bombFlash, 0.2);
+    // Tiny mult gift for the clear
+    if (this.mult < MULT_MAX) {
+      this.mult = Math.min(MULT_MAX, this.mult + 1);
+      this.ui.updateMult(this.mult);
+      this.multIdle = 0;
+    }
+  }
+
+  _tickMultDecay(dt) {
+    if (this.mult <= 1) {
+      this.multIdle = 0;
+      return;
+    }
+    this.multIdle += dt;
+    if (this.multIdle < MULT_IDLE_BEFORE_DECAY) return;
+    this.multDecayAcc += dt;
+    while (this.multDecayAcc >= MULT_DECAY_INTERVAL && this.mult > 1) {
+      this.multDecayAcc -= MULT_DECAY_INTERVAL;
+      this.mult -= 1;
+      this.ui.updateMult(this.mult);
+      this.ui.updateGun?.(this.mult);
+    }
+  }
+
+  _fireCooldown() {
+    // Mild mult reward only — never turns into a full-auto carpet
+    const t = Math.min(1, Math.max(0, this.mult - 1) / 120);
+    return FIRE_COOLDOWN + (FIRE_COOLDOWN_MIN - FIRE_COOLDOWN) * t;
+  }
+
+  _gridPulse(x, y, strength = 1) {
+    if (this.gridImpulses.length >= GRID_IMPULSE_MAX) this.gridImpulses.shift();
+    this.gridImpulses.push({
+      x,
+      y,
+      strength,
+      life: 0.65,
+      maxLife: 0.65,
+    });
+  }
+
+  _difficulty01() {
+    // Ease-in curve: stays low early, then ramps (not linear)
+    const ramp =
+      this.pathLevel && this.pathSpawnRampSec != null && this.pathSpawnRampSec > 0
+        ? this.pathSpawnRampSec
+        : SPAWN_RAMP_SECONDS;
+    const t = Math.min(1, this.elapsed / ramp);
+    return t * t;
+  }
+
+  _safeOpeningSec() {
+    if (this.pathLevel && this.pathSafeOpeningSec != null) {
+      return this.pathSafeOpeningSec;
+    }
+    return SAFE_OPENING_SEC;
+  }
+
+  _spawnInterval() {
+    const d = this._difficulty01();
+    const base = SPAWN_INTERVAL_START + (SPAWN_INTERVAL_MIN - SPAWN_INTERVAL_START) * d;
+    // Levels only matter after the opening; mild extra pressure
+    const levelBoost = this.elapsed < this._safeOpeningSec() ? 0 : Math.max(0, this.level - 1) * 0.015;
+    return Math.max(SPAWN_INTERVAL_MIN * 0.9, base - levelBoost);
+  }
+
+  _waveLull() {
+    const d = this._difficulty01();
+    return WAVE_LULL_START + (WAVE_LULL_MIN - WAVE_LULL_START) * d;
+  }
+
+  _softCap() {
+    // Path levels may pin a single soft cap number
+    if (this.pathLevel && this.pathSoftCap != null && this.pathSoftCap > 0) {
+      const cap = this.pathSoftCap;
+      // Still ease in during safe opening so the first seconds aren't max density
+      if (this.elapsed < this._safeOpeningSec()) {
+        return Math.max(SOFT_CAP.opening, Math.min(cap, Math.ceil(cap * 0.45)));
+      }
+      return cap;
+    }
+    // Goldilocks density bands — teeth at 90–150s without soup
+    if (this.elapsed < this._safeOpeningSec()) return SOFT_CAP.opening;
+    if (this.elapsed < 50) return SOFT_CAP.early;
+    if (this.elapsed < 100) return SOFT_CAP.mid;
+    if (this.elapsed < 150) return SOFT_CAP.late;
+    return SOFT_CAP.end;
+  }
+
+  _pickType() {
+    if (this.elapsed < this._safeOpeningSec()) return "wanderer";
+    // Path: compress SPAWN_TABLE unlocks via enemyUnlockScale (unlockAt * scale)
+    const scale =
+      this.pathLevel && this.pathEnemyUnlockScale != null && this.pathEnemyUnlockScale > 0
+        ? this.pathEnemyUnlockScale
+        : 1;
+    let table =
+      scale === 1
+        ? SPAWN_TABLE
+        : SPAWN_TABLE.map((row) => ({
+            ...row,
+            unlockAt: (row.unlockAt || 0) * scale,
+          }));
+    if (!this.pathLevel && this.elapsed >= (SPAWN_LATE_AT || 90)) {
+      table = table.map((row) => {
+        const w = SPAWN_LATE_WEIGHTS?.[row.type];
+        return w != null ? { ...row, weight: w } : row;
+      });
+    }
+    let type = pickSpawnType(this.elapsed, table);
+    const voidCount = this.enemies.filter((e) => e.type === "void").length;
+    const voidUnlock =
+      table.find((t) => t.type === "void")?.unlockAt ?? 105 * scale;
+    if (type === "void" && (voidCount >= 1 || this.elapsed < voidUnlock)) type = "wanderer";
+    if (type === "void" && voidCount >= 2) type = "diamond";
+    return type;
+  }
+
+  _phraseLull() {
+    const scale = this.phraseLullScale || 1;
+    return (this._waveLull() + this._spawnInterval() * 0.35) * scale;
+  }
+
+  /**
+   * Drain formation queue: staggered entry keeps rows readable.
+   * When a beat ends, either load the next phrase beat or apply intensity lull.
+   */
+  _drainSpawnQueue(dt, softCap) {
+    if (!this.spawnQueue.length) return false;
+    for (const job of this.spawnQueue) job.delay -= dt;
+
+    let spawned = 0;
+    while (this.spawnQueue.length && this.spawnQueue[0].delay <= 0) {
+      if (this.enemies.length >= softCap) {
+        // Hold remaining jobs briefly
+        this.spawnTimer = 0.35;
+        return true;
+      }
+      const job = this.spawnQueue.shift();
+      let type = job.type;
+      // Specials that shouldn't mass-spawn
+      if (type === "void" || type === "tank" || type === "snake") {
+        if (
+          spawned > 0 ||
+          (type === "void" && this.enemies.some((e) => e.type === "void")) ||
+          (type === "snake" && this.enemies.filter((e) => e.type === "snake").length >= 2)
+        ) {
+          type = type === "void" ? "diamond" : "wanderer";
+        }
+      }
+      const e = spawnEnemy(type, this.elapsed, { x: job.x, y: job.y });
+      if (e) {
+        if (job.hp != null && Number(job.hp) > 0) {
+          e.hp = Number(job.hp);
+          e.maxHp = Number(job.hp);
+        }
+        if (job.score != null && Number(job.score) > 0) {
+          e.score = Number(job.score);
+        }
+        if (job.boss) {
+          e.boss = true;
+          e.pathBoss = true;
+          this._pathBossSeen = true;
+          this.pathBossAlive = true;
+        }
+        if (job.pathTag) e.pathTag = job.pathTag;
+        if (job.approach) {
+          e.approach = job.approach;
+          // Hold formation while drifting in (longer early / circle closes)
+          const circle = this.phraseTag === "circle";
+          const jitter = Math.random() * 0.12;
+          e.approachTime =
+            this.elapsed < this._safeOpeningSec()
+              ? (PHRASE.APPROACH_OPENING || 1.15) + jitter
+              : circle
+                ? (PHRASE.APPROACH_CIRCLE || 0.5) + jitter * 0.5
+                : (PHRASE.APPROACH_NORMAL || 0.78) + jitter;
+        }
+        this.enemies.push(e);
+        spawned += 1;
+      }
+    }
+
+    if (this.spawnQueue.length) {
+      this.spawnTimer = Math.max(0.02, this.spawnQueue[0].delay);
+      return true;
+    }
+
+    // Beat finished — brief gap, then next phrase beat (handled in _trySpawn)
+    if (this.phraseBeats.length) {
+      this.spawnTimer = PHRASE.BEAT_GAP;
+      return true;
+    }
+
+    // Phrase finished — intensity-scaled lull
+    this.spawnTimer = this._phraseLull();
+    this.phraseTag = null;
+    return true;
+  }
+
+  /** Queue next beat from the active phrase (trim to soft-cap room). */
+  _loadNextPhraseBeat(softCap) {
+    while (this.phraseBeats.length) {
+      let beat = this.phraseBeats.shift();
+      beat = filterJobsNearPlayer(beat, this.player, PHRASE.SAFE_SPAWN_DIST * 0.85);
+      const room = Math.max(0, softCap - this.enemies.length);
+      this.spawnQueue = beat.slice(0, room);
+      if (this.spawnQueue.length) {
+        this._drainSpawnQueue(0, softCap);
+        return true;
+      }
+    }
+    this.spawnTimer = this._phraseLull();
+    this.phraseTag = null;
+    return false;
+  }
+
+  /**
+   * Phrase director: themed beats (money lines, pincers, intros, floods)
+   * with sawtooth lulls — GW cadence instead of independent random rolls.
+   */
+  _trySpawn(dt) {
+    const softCap = this._softCap();
+    const maxE =
+      this.pathMaxEnemies != null && this.pathMaxEnemies > 0
+        ? this.pathMaxEnemies
+        : MAX_ENEMIES;
+    const cap = Math.min(softCap, maxE);
+
+    // Always drain active formation first
+    if (this.spawnQueue.length) {
+      this._drainSpawnQueue(dt, cap);
+      return;
+    }
+
+    // Path waves / boss-lite: no improvisational phrase director
+    if (this.pathLevel && this.pathScriptOnly && !this.pathAllowImprov) {
+      this.spawnTimer = 999;
+      return;
+    }
+
+    // Between beats of a multi-beat phrase
+    if (this.phraseBeats.length) {
+      this.spawnTimer -= dt;
+      if (this.spawnTimer > 0) return;
+      if (this.enemies.length >= cap) {
+        this.spawnTimer = 0.45;
+        return;
+      }
+      this._loadNextPhraseBeat(cap);
+      return;
+    }
+
+    this.spawnTimer -= dt;
+    if (this.spawnTimer > 0) return;
+
+    if (this.enemies.length >= cap) {
+      this.spawnTimer = 0.55;
+      return;
+    }
+
+    const d = this._difficulty01();
+const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
+      safeOpening: this._safeOpeningSec(),
+      player: this.player,
+      seenIntros: this.seenIntros,
+      lastCircleAt: this.lastCircleAt,
+      lastFloodAt: this.lastFloodAt,
+      enemyCount: this.enemies.length,
+      hasVoid: this.enemies.some((e) => e.type === "void"),
+      arena: this.arena,
+      worldW: this.world?.w,
+      worldH: this.world?.h,
+    });
+
+    // Track intros / cooldowns
+    if (phrase.introKey) {
+      if (
+        phrase.introKey === "pink" ||
+        phrase.introKey === "spinner" ||
+        phrase.introKey === "pincer" ||
+        phrase.introKey === "splitter" ||
+        phrase.introKey === "snake" ||
+        phrase.introKey === "tank" ||
+        phrase.introKey === "void"
+      ) {
+        this.seenIntros.add(phrase.introKey);
+      }
+      if (phrase.tag === "circle" || phrase.introKey === "circle-event") {
+        this.lastCircleAt = this.elapsed;
+      }
+      if (phrase.tag === "flood" || phrase.introKey === "flood-event") {
+        this.lastFloodAt = this.elapsed;
+      }
+    } else if (phrase.tag === "circle") {
+      this.lastCircleAt = this.elapsed;
+    } else if (phrase.tag === "flood") {
+      this.lastFloodAt = this.elapsed;
+    }
+
+    this.phraseTag = phrase.tag;
+    this.phraseLullScale = PHRASE.LULL_SCALE[phrase.intensity] ?? 1;
+    this.phraseBeats = phrase.beats.map((b) => b.slice());
+
+    if (phrase.label) {
+      this.particles.floater(
+        this.player.x,
+        this.player.y - 52,
+        phrase.label,
+        COLORS.bomb,
+        1.15
+      );
+    }
+
+    this._loadNextPhraseBeat(cap);
+  }
+
+  _dropGeoms(enemy) {
+    const n = enemy.geoms || 1;
+    for (let i = 0; i < n; i++) {
+      const jx = (Math.random() - 0.5) * 18;
+      const jy = (Math.random() - 0.5) * 18;
+      this.geoms.push(createGeom(enemy.x + jx, enemy.y + jy));
+    }
+  }
+
+  _onKill(enemy, opts = {}) {
+    const { fromBomb = false } = opts;
+    const big =
+      enemy.type === "tank" ||
+      enemy.type === "snake" ||
+      enemy.type === "void" ||
+      enemy.type === "splitter";
+    // Sektori kill juice: denser front-loaded pop (short TTL handled in particles)
+    this.particles.burst(enemy.x, enemy.y, enemy.color, 52 + enemy.r * 1.8, 400 + enemy.r * 12);
+    this.particles.burst(enemy.x, enemy.y, COLORS.paper || "#fff4dc", 22 + (big ? 14 : 0), 320);
+    this.particles.ring(enemy.x, enemy.y, enemy.color, big ? 44 : 24, big ? 420 : 280);
+    if (!fromBomb && (big || Math.random() < 0.22)) {
+      const pops = big
+        ? ["WHAM", "KABOOM", "SMASH"]
+        : ["POW", "BANG", "KAPOW"];
+      this.particles.stamp(
+        enemy.x,
+        enemy.y - 10,
+        pops[(Math.random() * pops.length) | 0],
+        big ? COLORS.danger : COLORS.bomb,
+        big ? 3.1 : 2.15
+      );
+    }
+    if (big) {
+      this.particles.shockwave(enemy.x, enemy.y, enemy.color, 220 + enemy.r * 8);
+      this.bombFlash = Math.max(this.bombFlash, 0.22);
+      // Elite/big kills: punchy spike that can breach the combat soft-cap
+      addTrauma(this.cam, 0.3, { big: true });
+      punchZoom(this.cam, 0.07);
+    } else {
+      this.bombFlash = Math.max(this.bombFlash, 0.08);
+      // Fodder: light hit; soft-cap + faster decay prevent sustained earthquake
+      addTrauma(this.cam, 0.07 + Math.min(0.05, this.mult * 0.0015));
+      punchZoom(this.cam, 0.02);
+    }
+    this._gridPulse(enemy.x, enemy.y, big ? 2.8 : 1.55);
+
+    // Splitters birth children (not on bomb clear)
+    if (!fromBomb && enemy.type === "splitter") {
+      const kids = spawnSplitterChildren(enemy, this.elapsed);
+      for (const k of kids) this.enemies.push(k);
+    }
+
+    if (!fromBomb) {
+      const base = enemy.score;
+      const points = Math.floor(base * this.mult);
+      this._addScore(points, enemy.x, enemy.y, base);
+      this._dropGeoms(enemy);
+      this.audio.enemyDeath(big ? 0.65 : 1 + Math.min(1.5, this.mult * 0.02));
+    } else if (big) {
+      addTrauma(this.cam, 0.15, { big: true });
+    }
+
+    if (enemy.pathBoss || enemy.boss) {
+      this.pathBossAlive = false;
+      this.pathBossKilled = true;
+    }
+    if (this.pathLevel && this.mode?.onEnemyKilled) {
+      this.mode.onEnemyKilled(this._modeContext(), enemy);
+    }
+  }
+
+  _detonateBomb() {
+    if (this.bombs <= 0) return;
+    const savedMult = this.mult;
+    this.bombs -= 1;
+    this.ui.updateBombs?.(this.bombs);
+    this.audio.bomb();
+    this.bombFlash = 1.0;
+    addTrauma(this.cam, 0.72, { big: true });
+    punchZoom(this.cam, 0.12);
+    this._gridPulse(this.player.x, this.player.y, 4.5);
+    this.particles.shockwave(this.player.x, this.player.y, COLORS.bomb, 620);
+    this.particles.shockwave(this.player.x, this.player.y, COLORS.paper || "#fff4dc", 400);
+    this.particles.stamp(this.player.x, this.player.y - 24, "BOOM", COLORS.coral || COLORS.danger, 3.4);
+    this.particles.ring(this.player.x, this.player.y, COLORS.bomb, 72, 560);
+    this.particles.burst(this.player.x, this.player.y, COLORS.player, 70, 520);
+    this.particles.burst(this.player.x, this.player.y, COLORS.bomb, 40, 440);
+    this.particles.burst(this.player.x, this.player.y, "#ffffff", 36, 400);
+
+    for (const e of this.enemies) {
+      if (e.pathBoss || e.boss) {
+        // Insurance, not a win button — chip the elite, clear the fodder.
+        const chip = Math.max(1, BOSS_BOMB_CHIP || 3);
+        e.hp = Math.max(0, (e.hp || 1) - chip);
+        this.particles.burst(e.x, e.y, e.color, 28, 340);
+        this.particles.ring(e.x, e.y, e.color, 22, 280);
+        if (e.hp <= 0) {
+          e.dead = true;
+          this._onKill(e, { fromBomb: true });
+        }
+        continue;
+      }
+      e.dead = true;
+      this.particles.burst(e.x, e.y, e.color, 22, 300);
+      this.particles.ring(e.x, e.y, e.color, 12, 220);
+      this._gridPulse(e.x, e.y, 1.0);
+    }
+    this.enemies = this.enemies.filter((e) => !e.dead);
+    this.bullets = [];
+    this.player.invuln = Math.max(this.player.invuln, 700);
+    this.boardWasPopulated = false; // bomb clear doesn't count as skill clear
+    // Keep path-scripted queue; only drop improv residue. Waves/boss re-queue adds.
+    if (!(this.pathLevel && this.pathScriptOnly)) {
+      this.spawnQueue = [];
+    } else {
+      // Drop non-scripted leftover jobs; keep scripted boss/adds if any
+      this.spawnQueue = (this.spawnQueue || []).filter((j) => j.pathScripted || j.boss);
+    }
+    this.spawnTimer = Math.max(this.spawnTimer, 0.8);
+    // Boss kill notify lives in _onKill (called above if the chip finished it).
+
+    // Peak strategic fun: bomb protects a high mult — celebrate it
+    if (savedMult >= 10) {
+      this.particles.floater(
+        this.player.x,
+        this.player.y - 50,
+        `SAVED ×${savedMult}`,
+        COLORS.bomb,
+        1.5
+      );
+      this.audio.extraBomb();
+    }
+    // Vacuum leftover geoms after the panic clear
+    if (this.geoms.length > 0) {
+      this._triggerGeomVacuum();
+    }
+  }
+
+  /**
+   * Pick a respawn point: not always center.
+   *
+   * Geometry Wars often uses center (predictable). Fairer for crowded boards is
+   * the *safest open pocket* — center is still a strong candidate when clear.
+   * Avoids dumping you into the densest swarm if the middle is already owned.
+   */
+  _findRespawnPoint() {
+    const margin = 80;
+    const candidates = [
+      { x: WORLD_W / 2, y: WORLD_H / 2 }, // classic center
+      // Cardinal mid-edges (inset)
+      { x: WORLD_W * 0.25, y: WORLD_H * 0.25 },
+      { x: WORLD_W * 0.75, y: WORLD_H * 0.25 },
+      { x: WORLD_W * 0.25, y: WORLD_H * 0.75 },
+      { x: WORLD_W * 0.75, y: WORLD_H * 0.75 },
+      { x: WORLD_W * 0.5, y: WORLD_H * 0.28 },
+      { x: WORLD_W * 0.5, y: WORLD_H * 0.72 },
+      { x: WORLD_W * 0.28, y: WORLD_H * 0.5 },
+      { x: WORLD_W * 0.72, y: WORLD_H * 0.5 },
+      // Slight jitter samples
+      {
+        x: margin + Math.random() * (WORLD_W - margin * 2),
+        y: margin + Math.random() * (WORLD_H - margin * 2),
+      },
+      {
+        x: margin + Math.random() * (WORLD_W - margin * 2),
+        y: margin + Math.random() * (WORLD_H - margin * 2),
+      },
+    ];
+
+    let best = candidates[0];
+    let bestScore = -Infinity;
+
+    for (const c of candidates) {
+      // Distance to nearest enemy (higher = safer)
+      let nearest = Infinity;
+      let nearby = 0;
+      const nearR = 220;
+      for (const e of this.enemies) {
+        if (e.dead) continue;
+        const d = Math.hypot(e.x - c.x, e.y - c.y);
+        if (d < nearest) nearest = d;
+        if (d < nearR) nearby += 1 + (nearR - d) / nearR;
+      }
+      if (nearest === Infinity) nearest = 800;
+
+      // Prefer roomy space; mild bias toward center so it still feels arena-like
+      const cx = WORLD_W / 2;
+      const cy = WORLD_H / 2;
+      const centerBias = 1 - Math.hypot(c.x - cx, c.y - cy) / (Math.hypot(cx, cy) || 1);
+      const score = nearest * 1.4 - nearby * 55 + centerBias * 40;
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = c;
+      }
+    }
+
+    return best;
+  }
+
+  /**
+   * Death mult tax: keep a recovery seed so late density isn't "needle vs swarm".
+   * Never gains mult. Caps retained seed so death still hurts.
+   */
+  _multAfterDeath(prevMult) {
+    const prev = Math.max(1, prevMult | 0);
+    if (prev <= 1) return 1;
+    let keep = Math.floor(prev * DEATH_MULT_KEEP);
+    keep = Math.min(keep, DEATH_MULT_KEEP_CAP);
+    // Always lose a real chunk (at least half when mult is meaningful)
+    keep = Math.min(keep, Math.floor(prev * 0.5));
+    return Math.max(1, keep);
+  }
+
+  /**
+   * Cull leftover swarm after mercy clear so power drop matches board pressure.
+   * Prefers removing distant fodder; keeps elites if under budget.
+   */
+  _cullEnemiesAfterDeath() {
+    const target = Math.max(
+      6,
+      Math.floor(this._softCap() * RESPAWN_ENEMY_SOFT_FRAC)
+    );
+    if (this.enemies.length <= target) return;
+
+    const px = this.player.x;
+    const py = this.player.y;
+    // Sort: farthest + non-elite first
+    const ranked = this.enemies
+      .map((e, i) => {
+        const elite =
+          e.type === "void" ||
+          e.type === "tank" ||
+          e.type === "snake" ||
+          e.type === "splitter";
+        const dist = Math.hypot(e.x - px, e.y - py);
+        return { e, i, elite, dist };
+      })
+      .sort((a, b) => {
+        if (a.elite !== b.elite) return a.elite ? 1 : -1;
+        return b.dist - a.dist;
+      });
+
+    let left = this.enemies.length;
+    for (const row of ranked) {
+      if (left <= target) break;
+      if (row.e.dead) continue;
+      row.e.dead = true;
+      this.particles.burst(row.e.x, row.e.y, row.e.color, 10, 160);
+      left -= 1;
+    }
+    this.enemies = this.enemies.filter((e) => !e.dead);
+  }
+
+  /**
+   * Snapshot why this death happened *before* mercy teleport.
+   * `cause` is CRUSHED | enemy type | contact. `offscreen` is extra context
+   * for cover-crop / zoom (does not replace the cause).
+   * @param {string|null} [hint]
+   */
+  _snapshotDeath(hint = null) {
+    const cause =
+      hint === "CRUSHED"
+        ? "CRUSHED"
+        : hint || this._touchingEnemyType() || "contact";
+    return {
+      cause,
+      offscreen: this._isWorldPointOffscreen(this.player.x, this.player.y),
+      arena: this.arena?.topology || "rect",
+      morphWarn: !!this.morphWarn,
+      x: Math.round(this.player.x),
+      y: Math.round(this.player.y),
+    };
+  }
+
+  /** Enemy currently overlapping the ship, if any. */
+  _touchingEnemyType() {
+    for (const e of this.enemies) {
+      if (this._enemyHitPlayer(e)) return e.type || "contact";
+    }
+    return null;
+  }
+
+  /**
+   * True when a world point is outside the on-screen camera frame.
+   * Desktop letterbox is fully visible; this mainly flags phone cover-crop.
+   */
+  _isWorldPointOffscreen(x, y) {
+    const cam = this.cam;
+    if (!cam) return false;
+    const visX = this.display?.visFracX ?? 1;
+    const visY = this.display?.visFracY ?? 1;
+    if (visX >= 0.98 && visY >= 0.98) return false;
+    const z = Math.max(0.5, cam.zoom || 1);
+    const ww = this.world?.w || WORLD_W;
+    const wh = this.world?.h || WORLD_H;
+    const halfW = (ww / (2 * z)) * visX;
+    const halfH = (wh / (2 * z)) * visY;
+    const cx = cam.x ?? ww / 2;
+    const cy = cam.y ?? wh / 2;
+    return (
+      x < cx - halfW ||
+      x > cx + halfW ||
+      y < cy - halfH ||
+      y > cy + halfH
+    );
+  }
+
+  /**
+   * Death → safe-pocket respawn with mercy package:
+   * 1) Choose safest open area (center if it’s clear)
+   * 2) Death blast clears a wide radius there + soft board cull
+   * 3) Remaining enemies are shoved outward
+   * 4) Control freeze (blink, no input) then invuln with control restored
+   * 5) Soft mult retain (recovery seed) — not hard reset to ×1
+   * @param {string|null} [causeHint] CRUSHED | enemy type from the hit loop
+   */
+  _playerHit(causeHint = null) {
+    if (this.player.invuln > 0) return;
+    const deathMeta = this._snapshotDeath(causeHint);
+    this.lives -= 1;
+    this.ui.updateLives(this.lives);
+
+    const prevMult = this.mult;
+    const spawn = this._findRespawnPoint();
+    this.player.x = spawn.x;
+    this.player.y = spawn.y;
+    this.player.vx = 0;
+    this.player.vy = 0;
+    this.player.invuln = RESPAWN_INVULN_MS;
+    this.player.controlLock = RESPAWN_FREEZE_MS;
+    // Don't spray or bomb from residual stick/trigger held through death
+    this.input.clearFireButton();
+    this.input.clearEdgeActions();
+
+    addTrauma(this.cam, 0.62, { big: true });
+    punchZoom(this.cam, 0.09);
+    this.bombFlash = Math.max(this.bombFlash, 0.45);
+
+    // Soft mult tax — recovery seed so you're not cooked by late density
+    this.mult = this._multAfterDeath(prevMult);
+    this.multIdle = 0;
+    this.multDecayAcc = 0;
+    this.ui.updateMult(this.mult);
+    this.ui.updateGun?.(this.mult);
+
+    this.audio.playerHit();
+    this.particles.shockwave(this.player.x, this.player.y, COLORS.danger, 380);
+    this.particles.ring(this.player.x, this.player.y, COLORS.danger, 52, 420);
+    this.particles.burst(this.player.x, this.player.y, COLORS.danger, 36, 340);
+    this.particles.burst(this.player.x, this.player.y, "#ffffff", 28, 320);
+    this._gridPulse(this.player.x, this.player.y, 3.2);
+    this.afterimages = [];
+
+    // Mercy clear around respawn (GW-style breathing room)
+    const clearR = RESPAWN_CLEAR_RADIUS;
+    for (const e of this.enemies) {
+      if (circlesOverlap(this.player.x, this.player.y, clearR, e.x, e.y, e.r)) {
+        e.dead = true;
+        this.particles.burst(e.x, e.y, e.color, 16, 220);
+      }
+    }
+    this.enemies = this.enemies.filter((e) => !e.dead);
+    this._cullEnemiesAfterDeath();
+
+    // Knock survivors outward so you’re not ringed the instant grace ends
+    for (const e of this.enemies) {
+      const dx = e.x - this.player.x;
+      const dy = e.y - this.player.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const push = 220;
+      e.x += (dx / d) * push;
+      e.y += (dy / d) * push;
+      // Short stun only — must end well before invuln so contact can kill again
+      e.approach = { x: dx / d, y: dy / d };
+      e.approachTime = Math.max(e.approachTime || 0, 0.45);
+    }
+
+    // Don’t refill the board immediately; drop any queued formation mid-entry
+    this.spawnQueue = [];
+    this.spawnTimer = Math.max(this.spawnTimer, RESPAWN_SPAWN_PAUSE);
+
+    this.particles.floater(
+      this.player.x,
+      this.player.y - 40,
+      "SAFE",
+      COLORS.player,
+      1.1
+    );
+    if (prevMult > this.mult) {
+      this.particles.floater(
+        this.player.x,
+        this.player.y - 62,
+        `×${prevMult}→${this.mult}`,
+        COLORS.danger,
+        1.05
+      );
+    }
+    if (this.mult > 1) {
+      this.particles.floater(
+        this.player.x,
+        this.player.y - 84,
+        `KEEP ×${this.mult}`,
+        COLORS.geom,
+        0.95
+      );
+    }
+
+    this.deathCount += 1;
+    const deathEvent = {
+      elapsed: Math.round(this.elapsed),
+      level: this.level,
+      mult: prevMult,
+      multAfter: this.mult,
+      peakMult: this.peakMult,
+      livesLeft: this.lives,
+      bombs: this.bombs,
+      score: this.score,
+      enemies: this.enemies.length,
+      deathNum: this.deathCount,
+      cause: deathMeta.cause,
+      offscreen: deathMeta.offscreen,
+      arena: deathMeta.arena,
+      morphWarn: deathMeta.morphWarn,
+      x: deathMeta.x,
+      y: deathMeta.y,
+    };
+    // Tuning telemetry — median death target 90–150s. Read `cause` for Step 2.
+    console.info("[arena:death]", deathEvent);
+    recordDeath(deathEvent);
+
+    if (this.pathLevel && this.mode?.onPlayerDeath) {
+      this.mode.onPlayerDeath(this._modeContext());
+    }
+
+    if (this.lives <= 0) {
+      if (this.pathLevel) {
+        this.endPathLevel("lost");
+      } else {
+        this.gameOver();
+      }
+    }
+  }
+
+  /** True if any enemy is currently touching the player. */
+  _playerOverlappingEnemy() {
+    for (const e of this.enemies) {
+      if (this._enemyHitPlayer(e)) return true;
+    }
+    return false;
+  }
+
+  _enemyHitPlayer(e) {
+    // Outline telegraph: red wireframe only — not yet a solid threat
+    if (enemyIsOutline(e)) return false;
+    if (e.type === "snake") {
+      for (const s of snakeSegments(e)) {
+        if (circlesOverlap(this.player.x, this.player.y, this.player.r, s.x, s.y, s.r)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return circlesOverlap(this.player.x, this.player.y, this.player.r, e.x, e.y, e.r);
+  }
+
+  _bulletHitsEnemy(b, e) {
+    // Can't kill / graze during outline phase (fairness with spawn telegraph)
+    if (enemyIsOutline(e)) return false;
+    if (e.type === "snake") {
+      for (const s of snakeSegments(e)) {
+        if (circlesOverlap(b.x, b.y, b.r, s.x, s.y, s.r)) return true;
+      }
+      return false;
+    }
+    return circlesOverlap(b.x, b.y, b.r, e.x, e.y, e.r);
+  }
+
+  _update(dt) {
+    if (this.input.consumePause()) {
+      this.pause();
+      return;
+    }
+    if (this.input.consumeMute()) this.toggleMute();
+
+    // Control freeze: blink in place — ignore move / fire / bomb (sticks may still be held)
+    const locked =
+      this.player.controlLock != null && this.player.controlLock > 0;
+    if (locked) {
+      this.player.controlLock = Math.max(
+        0,
+        this.player.controlLock - dt * 1000
+      );
+      // Swallow bomb edges while frozen (held A/LT from death shouldn't detonate)
+      this.input.consumeBomb();
+    } else if (this.input.consumeBomb()) {
+      this._detonateBomb();
+    }
+
+    this.elapsed += dt;
+    this.time += dt;
+    this.levelTimer += dt;
+    this._tickMorph(dt);
+    if (this.mult > this.peakMult) this.peakMult = this.mult;
+    // Classic Evolved stage/BGM cadence only — Path uses fixed short levels
+    if (!this.pathLevel && this.levelTimer >= LEVEL_DURATION_SEC) {
+      this._advanceLevel();
+    }
+    this._tickMultDecay(dt);
+    if (this.geomVacuum > 0) {
+      // Keep electric stream feeding the ship while vacuum is hot
+      this.particles.vacuumSustain(
+        this.player.x,
+        this.player.y,
+        COLORS.geom,
+        this.geomVacuum
+      );
+      // Attract-stream targets track the ship if you move during vacuum
+      for (const p of this.particles.particles) {
+        if (p.attract) {
+          p.tx = this.player.x;
+          p.ty = this.player.y;
+        }
+      }
+      this.geomVacuum = Math.max(0, this.geomVacuum - dt);
+    }
+    if (this.clearCooldown > 0) this.clearCooldown = Math.max(0, this.clearCooldown - dt);
+
+    let move = this.input.moveVector();
+    const aimAngle = this.input.aimAngle();
+    let firing = this.input.isFiring();
+    if (locked) {
+      move = { x: 0, y: 0 };
+      firing = false;
+      this.player.vx = 0;
+      this.player.vy = 0;
+    }
+    const canFire = updatePlayer(this.player, move, aimAngle, dt, firing);
+    if (canFire) {
+      const a = this.player.angle;
+      // Default: single bolt. Dual/triple only at high mult (earned, not free).
+      let angles = [a];
+      if (this.mult >= MULT_FOR_DUAL) {
+        angles = [a - FIRE_SPREAD, a + FIRE_SPREAD];
+      }
+      if (this.mult >= MULT_FOR_TRIPLE) {
+        angles = [a - FIRE_SPREAD, a, a + FIRE_SPREAD];
+      }
+      for (const ang of angles) {
+        this.bullets.push(createBullet(this.player.x, this.player.y, ang));
+      }
+      this.player.fireCd = this._fireCooldown();
+      this.audio.shoot(this.mult);
+      recoil(this.cam, a, 5.2);
+      const c = Math.cos(a);
+      const s = Math.sin(a);
+      const mx = this.player.x + c * 22;
+      const my = this.player.y + s * 22;
+      this.particles.burst(mx, my, COLORS.paper || "#fff4dc", 10, 220);
+      this.particles.burst(mx, my, COLORS.bomb, 6, 160);
+      this._gridPulse(mx, my, 0.28);
+    }
+
+    // Hard invuln countdown (ms). No extension — that caused infinite safety in crowds.
+    if (this.player.invuln > 0) {
+      this.player.invuln = Math.max(0, this.player.invuln - dt * 1000);
+    }
+
+    // Camera: follow + look-ahead + aim lean + trauma
+    // visFrac accounts for CSS cover-crop on phones so edge tracking stays honest
+    updateCamera(this.cam, this.player, this.input.aimVector(), dt, {
+      visFracX: this.display?.visFracX ?? 1,
+      visFracY: this.display?.visFracY ?? 1,
+    });
+
+// Thruster dust + motion afterimages
+    this.particles.trail(
+      this.player.x,
+      this.player.y,
+      this.player.vx,
+      this.player.vy,
+      COLORS.player
+    );
+    this.afterimageTimer -= dt;
+    const afterMax = GFX.AFTERIMAGE_MAX_LIVE ?? AFTERIMAGE_MAX;
+    const spd = Math.hypot(this.player.vx, this.player.vy);
+    if (afterMax > 0 && spd > 40 && this.afterimageTimer <= 0) {
+      this.afterimageTimer = GFX.QUALITY === "low" ? 0.055 : 0.028;
+      this.afterimages.push({
+        x: this.player.x,
+        y: this.player.y,
+        angle: this.player.angle,
+        life: 0.18,
+      });
+      if (this.afterimages.length > afterMax) this.afterimages.shift();
+    } else if (afterMax <= 0 && this.afterimages.length) {
+      this.afterimages.length = 0;
+    }
+    for (let i = this.afterimages.length - 1; i >= 0; i--) {
+      this.afterimages[i].life -= dt;
+      if (this.afterimages[i].life <= 0) this.afterimages.splice(i, 1);
+    }
+
+    updateBullets(this.bullets, dt);
+    const { atoms } = updateEnemies(this.enemies, this.player, dt, this.elapsed);
+    if (atoms.length) {
+      const atomCap = Math.min(
+        MAX_ENEMIES,
+        this.pathMaxEnemies || MAX_ENEMIES,
+        this._softCap()
+      );
+      for (const a of atoms) {
+        if (this.enemies.length < atomCap) this.enemies.push(a);
+      }
+    }
+    updateGeoms(this.geoms, this.player, dt, this.mult, this.geomVacuum);
+    this._trySpawn(dt);
+
+    // Continuous soft grid pull near voids
+    for (const e of this.enemies) {
+      if (e.type === "void" && Math.random() < 0.15) {
+        this._gridPulse(e.x, e.y, 0.35);
+      }
+    }
+
+    // Collect geoms → multiplier (core GW RE2 loop)
+    for (let i = this.geoms.length - 1; i >= 0; i--) {
+      const g = this.geoms[i];
+      if (
+        // Generous pickup radius so tiny geoms stay easy to scoop
+        circlesOverlap(this.player.x, this.player.y, this.player.r + 10, g.x, g.y, g.r)
+      ) {
+        this.geoms.splice(i, 1);
+        this._addGeomMult(g.x, g.y);
+        this.audio.geom(this.mult);
+        this.particles.burst(g.x, g.y, COLORS.geom, 12, 140);
+        this.particles.burst(g.x, g.y, "#ffffff", 4, 90);
+      }
+    }
+
+    // Bullet → enemy
+    for (const b of this.bullets) {
+      if (b.dead) continue;
+      for (const e of this.enemies) {
+        if (e.dead) continue;
+        if (this._bulletHitsEnemy(b, e)) {
+          b.dead = true;
+          e.hp -= 1;
+          this.audio.enemyHit();
+          this.particles.burst(b.x, b.y, e.color, 10, 160);
+          this.particles.burst(b.x, b.y, "#ffffff", 3, 100);
+          if (e.hp <= 0) {
+            e.dead = true;
+            this._onKill(e);
+          }
+          break;
+        }
+      }
+    }
+    this.bullets = this.bullets.filter((b) => !b.dead);
+    if (this.enemies.some((e) => !e.dead)) this.boardWasPopulated = true;
+    this.enemies = this.enemies.filter((e) => !e.dead);
+    this._checkBoardClear();
+
+    if (this.player.invuln <= 0) {
+      for (const e of this.enemies) {
+        if (this._enemyHitPlayer(e)) {
+          this._playerHit(e.type || "contact");
+          break;
+        }
+      }
+    }
+
+    // Grid impulses decay
+    for (let i = this.gridImpulses.length - 1; i >= 0; i--) {
+      this.gridImpulses[i].life -= dt;
+      if (this.gridImpulses[i].life <= 0) this.gridImpulses.splice(i, 1);
+    }
+
+    this.particles.update(dt);
+    if (this.bombFlash > 0) this.bombFlash = Math.max(0, this.bombFlash - dt * 1.35);
+
+    // Path mode win/lose after sim step (score/enemies settled)
+    if (this.pathLevel && !this.pathEnding) {
+      this._tickPathMode(dt);
+    }
+  }
+
+  /**
+   * Paint the playfield into `wctx` (world or main canvas) in DPR-scaled space.
+   * Shared by the high-quality offscreen path and the mobile direct path.
+   */
+  _paintWorld(wctx, dpr) {
+    const ww = this.world?.w || WORLD_W;
+    const wh = this.world?.h || WORLD_H;
+    const pulse = technoPulse(this.time, GFX.TECHNO_BPM);
+
+    wctx.save();
+    applyCameraTransform(wctx, this.cam, dpr);
+    // Floor environment first…
+    drawGrid(wctx, 0, 0, this.gridImpulses, this.time, ww, wh, pulse);
+    if (this.arena) drawArena(wctx, this.arena, { time: this.time, cam: this.cam });
+    if (this.pathLevel && this.pathCheckpoints) {
+      drawCheckpoints(
+        wctx,
+        this.pathCheckpoints,
+        this.pathCheckpointIndex || 0,
+        this.time
+      );
+    }
+    // Morph danger telegraph (red zones about to become solid)
+    if (
+      this.morphWarn &&
+      this.morphNextArena &&
+      this.arena &&
+      !this.pathLevel
+    ) {
+      const warnSec = Math.max(0.6, MORPH.WARN_SEC || 2);
+      const prog = Math.min(1, this.morphWarnT / warnSec);
+      drawMorphDanger(wctx, this.arena, this.morphNextArena, prog, this.time);
+    }
+    // Brief white/red rim flash on morph commit
+    if (this.morphFlash > 0) {
+      const a = Math.min(1, this.morphFlash * 2.2);
+      wctx.save();
+      wctx.globalCompositeOperation = "lighter";
+      wctx.strokeStyle = `rgba(255, 40, 80, ${a * 0.55})`;
+      wctx.lineWidth = 10;
+      wctx.strokeRect(6, 6, ww - 12, wh - 12);
+      wctx.strokeStyle = `rgba(255, 255, 255, ${a * 0.35})`;
+      wctx.lineWidth = 3;
+      wctx.strokeRect(10, 10, ww - 20, wh - 20);
+      wctx.restore();
+    }
+    // …then shadows on the floor…
+    drawFloorShadows(wctx, this.player, this.enemies, this.geoms, this.time);
+    // …then shapes hovering above
+    drawGeoms(wctx, this.geoms, this.time);
+    drawEnemies(wctx, this.enemies, this.time);
+    drawBullets(wctx, this.bullets);
+    drawAfterimages(wctx, this.afterimages);
+    drawPlayer(wctx, this.player, this.time);
+    this.particles.draw(wctx);
+    if (this.state === "playing") {
+      const aim = this.input.aimVector();
+      drawAimReticle(
+        wctx,
+        this.player.x + aim.x * AIM_RETICLE_DIST,
+        this.player.y + aim.y * AIM_RETICLE_DIST,
+        this.player.x,
+        this.player.y
+      );
+    }
+    wctx.restore();
+
+    // Screen-space flash in world pixels (not camera-warped)
+    wctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawBombFlash(wctx, this.bombFlash);
+    return pulse;
+  }
+
+_draw() {
+    // Layout rect is only needed for pointer mapping / cover-crop camera.
+    // Avoid forced style recalc every frame on mobile — refresh ~4×/sec or on resize.
+    const now = typeof performance !== "undefined" ? performance.now() : 0;
+    if (!this._nextLayoutAt || now >= this._nextLayoutAt) {
+      this._nextLayoutAt = now + (GFX.QUALITY === "low" ? 250 : 100);
+      const rect = this.canvas.getBoundingClientRect?.() || {
+        left: 0,
+        top: 0,
+        width: WORLD_W,
+        height: WORLD_H,
+      };
+      this.display.left = rect.left;
+      this.display.top = rect.top;
+      this.display.width = rect.width;
+      this.display.height = rect.height;
+    }
+
+    // Headless UAT: no canvas context — skip paint
+    if (!this.ctx) return;
+
+    const dpr = this.dpr || 1;
+    const main = this.ctx;
+    const useOffscreen =
+      GFX.USE_OFFSCREEN_WORLD &&
+      this.worldCtx &&
+      this.worldCanvas &&
+      this.worldCanvas.width > 0 &&
+      this.worldCanvas.height > 0;
+
+    // ── Mobile / low quality: paint straight to the visible canvas ──
+    // Skips offscreen blit, CSS-filter bloom, and chromatic aberration.
+    if (!useOffscreen) {
+      main.setTransform(1, 0, 0, 1, 0, 0);
+      main.fillStyle = "#000005";
+      main.fillRect(0, 0, main.canvas.width, main.canvas.height);
+      this._paintWorld(main, dpr);
+
+      main.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (GFX.ENABLE_COLOR_GRADE) drawColorGrade(main, this.mult);
+      if (GFX.ENABLE_VIGNETTE) drawPostVignette(main, this.mult);
+      return;
+    }
+
+    // ── High quality: world buffer → present → bloom → CA → grade ──
+    const wctx = this.worldCtx;
+    const bw = this.worldCanvas.width;
+    const bh = this.worldCanvas.height;
+
+    wctx.setTransform(1, 0, 0, 1, 0, 0);
+    wctx.fillStyle = "#000005";
+    wctx.fillRect(0, 0, bw, bh);
+
+    const pulse = this._paintWorld(wctx, dpr);
+
+    // Present base world
+    main.setTransform(1, 0, 0, 1, 0, 0);
+    main.imageSmoothingEnabled = true;
+    main.fillStyle = "#000005";
+    main.fillRect(0, 0, main.canvas.width, main.canvas.height);
+    main.drawImage(this.worldCanvas, 0, 0);
+
+    // Bloom (tight + wide additive) — desktop only
+    if (GFX.ENABLE_BLOOM && this.bloomTight && this.bloomWide) {
+      compositeBloom(
+        main,
+        this.worldCanvas,
+        {
+          tight: this.bloomTight,
+          wide: this.bloomWide,
+        },
+        { pulse }
+      );
+    }
+
+    // Trauma chromatic fringe — desktop only
+    if (GFX.ENABLE_CHROMATIC) {
+      compositeChromatic(main, this.worldCanvas, this.cam.trauma, dpr);
+    }
+
+    // Mult color grade + vignette (world px space)
+    main.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (GFX.ENABLE_COLOR_GRADE) drawColorGrade(main, this.mult);
+    if (GFX.ENABLE_VIGNETTE) drawPostVignette(main, this.mult);
+  }
+
+  _loop(now) {
+    const raw = this.lastTime ? (now - this.lastTime) / 1000 : 0;
+    this.lastTime = now;
+    const dt = Math.min(raw, 1 / 30);
+
+    if (this.state === "playing") {
+      this._update(dt);
+    } else {
+      if (this.input.consumeMute()) this.toggleMute();
+      // Keyboard R / LB quick-restart. A/Start confirm the focused overlay button.
+      if (this.state === "gameover" && this.input.consumeRestart()) {
+        this.start();
+      }
+      if (
+        (this.state === "path_clear" || this.state === "path_fail") &&
+        this.input.consumeRestart() &&
+        this.pathLevel
+      ) {
+        const id = this.pathLevel.id;
+        this.startLevel(id);
+      }
+      if (this.state === "menu") {
+        this.time += dt;
+        this.player.angle += dt * 0.85;
+        this.particles.update(dt * 0.5);
+        updateMenuCamera(this.cam, dt);
+        // Soft geom rain — pickups drift through the title arena
+        this._updateMenuGeoms(dt);
+        // Ambient grid pulses — much quieter on mobile quality
+        const ambientRate = GFX.QUALITY === "low" ? 0.008 : 0.035;
+        if (Math.random() < ambientRate) {
+          this._gridPulse(
+            Math.random() * WORLD_W,
+            Math.random() * WORLD_H,
+            0.55 + Math.random() * 0.7
+          );
+          this.particles.burst(
+            Math.random() * WORLD_W,
+            Math.random() * WORLD_H,
+            COLORS.player,
+            6,
+            80
+          );
+        }
+        // Occasional geom drop from the top
+        const geomRate = GFX.QUALITY === "low" ? 0.02 : 0.06;
+        const geomCap = GFX.QUALITY === "low" ? 12 : 28;
+        if (Math.random() < geomRate && this.geoms.length < geomCap) {
+          const g = createGeom(40 + Math.random() * (WORLD_W - 80), -12 - Math.random() * 40);
+          g.vx = (Math.random() - 0.5) * 40;
+          g.vy = 40 + Math.random() * 70;
+          g.life = 8 + Math.random() * 6;
+          this.geoms.push(g);
+        }
+        for (let i = this.gridImpulses.length - 1; i >= 0; i--) {
+          this.gridImpulses[i].life -= dt;
+          if (this.gridImpulses[i].life <= 0) this.gridImpulses.splice(i, 1);
+        }
+      }
+      if (this.state === "paused" && this.input.consumePause()) {
+        this.resume();
+      }
+    }
+
+    this._draw();
+    this.raf = requestAnimationFrame(this._loop);
+  }
+}

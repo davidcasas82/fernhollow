@@ -1,0 +1,125 @@
+# Geometry Arena
+
+A **Geometry Wars–inspired** twin-stick shooter for the browser. Move with WASD, aim with the mouse, hold click to fire, and survive escalating geometric swarms. Bluetooth / USB gamepads work too (left stick move, right stick aim).
+
+## Play now
+
+**[▶ Open Geometry Arena](https://davidcasas82.github.io/geometry-arena/)**
+
+Works on **desktop** (mouse/keyboard), **gamepad** (TV/couch), and **phone/tablet** (virtual twin-sticks — landscape recommended).
+
+## Play locally
+
+From this folder:
+
+```bash
+npm start
+```
+
+Then open **http://localhost:5173**
+
+Or open `index.html` with any static file server (ES modules need a server, not `file://`).
+
+## Controls
+
+| Action | Keyboard / mouse | Gamepad |
+|--------|------------------|---------|
+| Move | `W` `A` `S` `D` (or arrows) | Left stick (analog speed) / D-pad |
+| Aim | Drag trackpad / mouse (relative) | Right stick (absolute) |
+| Fire | **Click and hold** left mouse | **RT** or **RB** (hold) |
+| Bomb | `Space` or `B` | **LT** (also A / LB) |
+| Pause | `P` / `Esc` | **Start** / Options |
+| Mute | `M` | **Back** / Select / Share |
+| Restart | Play Again / `R` after game over | **A** or **Start** |
+| Title menu | **Title** on game over | — |
+| Title PLAY | `Enter` / `Space` | **A** or **Start** |
+
+### Touch (phone / tablet)
+
+| Action | Gesture |
+|--------|---------|
+| Move | Left thumb — drag (virtual stick) |
+| Aim + fire | Right thumb — drag to aim, hold to fire |
+| Bomb | **BOMB** button |
+| Pause | **❚❚** button |
+
+Landscape is best. A rotate hint appears in portrait. Desktop mouse/keyboard and gamepad are unchanged when you’re not on a touch device.
+
+Pair a Bluetooth controller in system settings first (Xbox, DualSense, Switch Pro, 8BitDo, etc.). Press any button once so the browser can see the pad. Keyboard and gamepad work at the same time.
+
+On play, the game captures the pointer so trackpad aim doesn’t stop at the screen edge (gamepad aim does not need pointer lock).
+
+## Geometry Wars–inspired systems
+
+See honest gap scores vs the real game: [`docs/VS_GEOMETRY_WARS.md`](docs/VS_GEOMETRY_WARS.md).
+
+- **Geom mult economy** — +1 ×mult per geom, ceiling 999, idle decay, death soft-keeps mult  
+- **Reactive neon grid**, additive particles, thruster afterimages  
+- **Fire densifies with mult** — needle until **×45 dual**, **×110 triple** (HUD says so)  
+- **Bombs** — shockwave clear, no points; start 3 / max 5; +1 every **38k** base progress  
+- **Extra lives** — start 3 / max 5; first +life every **32k** base progress (escalates)  
+- **Wave spawn director** (bursts + lulls + formations)
+
+## Enemies
+
+| Shape | Behavior |
+|-------|----------|
+| Spore (ice drone) | Slow pack-seek |
+| Thorn (jade spear) | Lane-charge seek |
+| Jaw (coral) | Creep, coil, then bite |
+| Gyro (lilac blades) | Orbit approach |
+| Rift (cracked tablet) | Dies into 2 shards |
+| Lash (coral whip) | Multi-segment weaver |
+| Slab (amber brick) | Slow, 3 HP |
+| Maw (ink blot) | Pulls you in, sheds shards |
+
+Scoop **geoms** to raise multiplier. Death soft-resets mult (keeps a recovery seed).
+
+## Soundtrack
+
+Suno-generated instrumental **Neon Swarm** (two variants):
+
+| File | When |
+|------|------|
+| `audio/neon-swarm-1.mp3` | Levels **1, 3, 5…** |
+| `audio/neon-swarm-2.mp3` | Levels **2, 4, 6…** |
+
+Heat ticks every **70s** of survival (see `LEVEL_DURATION_SEC`). Tracks crossfade without restarting; mute/`M` silences SFX + BGM.
+
+## Stack
+
+- Vanilla HTML / CSS / JS (ES modules)
+- Canvas 2D rendering
+- Web Audio SFX + HTMLAudioElement BGM loops
+- LocalStorage for high score
+
+## Dev / session handoff
+
+For architecture, UI flow, balance contracts, past bugs, and how to resume work in a new session, see:
+
+**[`docs/BUILD_CONTEXT.md`](docs/BUILD_CONTEXT.md)**
+
+Balance knobs live in `js/constants.js` (prefer that over README numbers if they disagree).
+
+## Deploy (GitHub Pages)
+
+This repo is set up for **GitHub Pages** on the `main` branch (site root).
+
+| | |
+|--|--|
+| **Live game** | https://davidcasas82.github.io/geometry-arena/ |
+| **Source** | https://github.com/davidcasas82/geometry-arena |
+
+**Update the live site:** commit and push to `main` — Pages rebuilds automatically (usually under a minute).
+
+```bash
+git add -A
+git commit -m "Your change"
+git push
+```
+
+Other static hosts (Vercel, Netlify, Cloudflare Pages) also work if you ever want a custom domain or private deploys.
+
+## Tuning
+
+Gameplay knobs live in `js/constants.js` (speeds, fire rate, spawn ramp, lives, colors).
