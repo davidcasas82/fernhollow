@@ -16,6 +16,7 @@ import {
   WORLD_W,
 } from "./constants.js";
 import { clampEntityObject, createDefaultArena, pickSpawnEdge } from "./arenas.js";
+import { rememberPlace, settleMotion } from "./motion.js";
 import { clampToWorld, normalize, separate } from "./physics.js";
 
 /** @type {import('./arenas.js').ArenaInstance|null} */
@@ -63,6 +64,8 @@ export function updatePlayer(player, move, aimAngle, dt, firing) {
     player.vy = 0;
   }
 
+  const beforeX = player.x;
+  const beforeY = player.y;
   player.x += player.vx * dt;
   player.y += player.vy * dt;
   const arena = arenaOrDefault();
@@ -75,6 +78,10 @@ export function updatePlayer(player, move, aimAngle, dt, firing) {
   }
 
   player.angle = aimAngle;
+
+  const travel = Math.hypot(player.x - beforeX, player.y - beforeY);
+  if (player.flash > 0) player.flash = Math.max(0, player.flash - dt);
+  if (Math.hypot(player.vx, player.vy) > 12) player.step = (player.step || 0) + travel;
 
   // Invuln countdown is handled in game loop so it can extend while overlapping
   if (player.fireCd > 0) player.fireCd -= dt;
@@ -287,6 +294,7 @@ export function updateEnemies(enemies, player, dt, elapsed = 0) {
 
   for (const e of enemies) {
     if (e.dead) continue;
+    rememberPlace(e);
 
     if (e.flash > 0) e.flash = Math.max(0, e.flash - dt);
     if (e.knockT > 0) {
@@ -535,6 +543,11 @@ export function updateEnemies(enemies, player, dt, elapsed = 0) {
 
   for (const e of enemies) {
     if (!e.dead && e.type !== "snake" && e.type !== "void") separate(e, enemies, 36);
+  }
+
+  for (const e of enemies) {
+    if (e.dead) continue;
+    settleMotion(e, dt);
   }
 
   return { atoms };

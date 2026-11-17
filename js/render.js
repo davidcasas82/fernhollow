@@ -13,6 +13,8 @@ import {
 import { snakeSegments } from "./entities.js";
 import { bloom, colorWithAlpha, neonStroke } from "./fx.js";
 import { artBook, drawClip, drawFrame, facing4 } from "./art.js";
+import { enemyFrame, flashAlpha, pickupBob, spawnPose, fxOnceIndex, ryanWalkIndex } from "./motion.js";
+import { drawText, textWidth } from "./pixel-text.js";
 
 /** Enemy still in red-outline telegraph phase (no solid fill / no collision). */
 export function enemyIsOutline(e) {
@@ -405,9 +407,14 @@ export function drawPlayer(ctx, player, t = 0) {
   if (shooting) dir = facing4(player.angle || 0);
   else if (moving) dir = facing4(Math.atan2(player.vy, player.vx));
   player.face = dir;
-  if (player.invuln > 0 && Math.floor(player.invuln / 80) % 2 === 0) return;
+  const flashing = (player.flash || 0) > 0;
+  if (player.invuln > 0 && !flashing && Math.floor(player.invuln / 80) % 2 === 0) return;
   const clip = shooting ? `shoot_${dir}` : moving ? `walk_${dir}` : `idle_${dir}`;
-  drawClip(ctx, sheet, clip, t, player.x, player.y);
+  const opts = {};
+  if (moving && !shooting) opts.index = ryanWalkIndex(player);
+  const flash = flashAlpha(player.flash);
+  if (flash > 0) opts.flash = flash;
+  drawClip(ctx, sheet, clip, t, player.x, player.y, opts);
 }
 
 export function drawBullets(ctx, bullets, t = 0) {
@@ -415,7 +422,8 @@ export function drawBullets(ctx, bullets, t = 0) {
   if (!ctx || !sheet || !bullets) return;
   for (const b of bullets) {
     if (b.dead) continue;
-    drawClip(ctx, sheet, "bolt", t, b.x, b.y);
+    const ang = Math.atan2(b.vy || 0, b.vx || 0);
+    drawClip(ctx, sheet, "bolt", t, b.x, b.y, { angle: ang });
   }
 }
 
@@ -433,7 +441,7 @@ export function drawGeoms(ctx, geoms, t = 0) {
     } else if (lifeFrac < 0.45) {
       alpha = 0.55 + 0.45 * ((lifeFrac - 0.2) / 0.25);
     }
-    drawClip(ctx, sheet, "sunseed", t, g.x, g.y, { alpha });
+    drawClip(ctx, sheet, "sunseed", t, g.x, g.y - pickupBob(t, g.x), { alpha });
   }
 }
 
@@ -445,25 +453,35 @@ function sheetForEnemy(enemy) {
   return book.sheets[id] || null;
 }
 
+function actorOpts(entity, index, extra = {}) {
+  const pose = spawnPose(entity?.enter);
+  const opts = { index, ...extra };
+  if (pose.alpha < 1) opts.alpha = pose.alpha;
+  const flash = flashAlpha(entity?.flash);
+  if (flash > 0) opts.flash = flash;
+  return { opts, pose };
+}
+
 function drawWhip(ctx, enemy, t) {
   const book = artBook();
+  const pose = spawnPose(enemy.enter);
+  if (pose.alpha <= 0) return;
   const segs = snakeSegments(enemy);
   const segSheet = book.sheets[book.behavior.snakeSegment];
   const headSheet = book.sheets[book.behavior.snake];
+  const base = enemyFrame(enemy);
   for (let i = segs.length - 1; i >= 1; i--) {
     const here = segs[i];
     const toward = segs[i - 1];
     const heading = Math.atan2(toward.y - here.y, toward.x - here.x);
-    drawClip(ctx, segSheet, "idle", t + i * 0.05, here.x, here.y, {
-      angle: heading + Math.PI / 2,
-    });
+    const { opts } = actorOpts(enemy, (base + i) % 4, { angle: heading + Math.PI / 2 });
+    drawClip(ctx, segSheet, "idle", t, here.x, here.y + pose.dy, opts);
   }
   const head = segs[0];
   const neck = segs[1] || head;
   const heading = Math.atan2(head.y - neck.y, head.x - neck.x);
-  drawClip(ctx, headSheet, "idle", t, head.x, head.y, {
-    angle: heading + Math.PI / 2,
-  });
+  const { opts } = actorOpts(enemy, base % 4, { angle: heading + Math.PI / 2 });
+  drawClip(ctx, headSheet, "idle", t, head.x, head.y + pose.dy, opts);
 }
 
 export function drawEnemies(ctx, enemies, t = 0) {
@@ -474,10 +492,13 @@ export function drawEnemies(ctx, enemies, t = 0) {
       drawWhip(ctx, e, t);
       continue;
     }
+    const pose = spawnPose(e.enter);
+    if (pose.alpha <= 0) continue;
     const sheet = sheetForEnemy(e);
     if (!sheet) continue;
-    const blink = e.flash > 0 && ((Math.floor(t * 16) + (e.x | 0)) & 1) === 0;
-    drawClip(ctx, sheet, "idle", t + (e.phase || 0), e.x, e.y, blink ? { alpha: 0.25 } : undefined);
+    const { opts } = actorOpts(e, enemyFrame(e));
+    if (e.flipX) opts.flipX = true;
+    drawClip(ctx, sheet, "idle", t, e.x, e.y + pose.dy, opts);
   }
 }
 
@@ -489,7 +510,30 @@ export function drawArtFx(ctx, list, t = 0) {
   if (!ctx || !sheet || !list) return;
   for (const fx of list) {
     if (!fx || COMIC_FX_KINDS.has(fx.kind)) continue;
-    drawClip(ctx, sheet, fx.kind, fx.age != null ? fx.age : t, fx.x, fx.y);
+    const clip = sheet.clips?.[fx.kind];
+    const once = clip ? fxOnceIndex(clip.frames.length, fx.kind, fx.age) : null;
+    const opts = once == null ? {} : { index: once };
+    drawClip(ctx, sheet, fx.kind, fx.age != null ? fx.age : t, fx.x, fx.y, opts);
+  }
+}
+
+/** Rising hit numbers in the 5×7 pixel font. Not used by sprite draws. */
+export function drawDamageNumbers(ctx, list) {
+  if (!ctx || !list?.length) return;
+  for (const n of list) {
+    const life = n.life > 0 ? n.life : 0.7;
+    const u = Math.max(0, Math.min(1, (n.age || 0) / life));
+    if (u >= 1) continue;
+    const rise = Math.round((1 - (1 - u) ** 2) * 28);
+    const scale = 2;
+    const label = String(n.text);
+    const x = Math.round(n.x - textWidth(label, scale) / 2);
+    const y = Math.round(n.y - rise);
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = u < 0.72 ? 1 : (1 - u) / 0.28;
+    drawText(ctx, label, x, y, scale, "#fff4dc", "#12101c");
+    ctx.restore();
   }
 }
 

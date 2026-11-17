@@ -1010,9 +1010,17 @@ function showPathResultUI(result) {
   syncTouchChrome();
 }
 
+function popStat(el) {
+  if (!el) return;
+  el.classList.remove("pop");
+  void el.offsetWidth;
+  el.classList.add("pop");
+}
+
 const ui = {
   updateScore(n) {
     scoreEl.textContent = format(n);
+    popStat(scoreEl);
   },
   updateLevel(n) {
     if (levelEl) levelEl.textContent = String(n);
@@ -1021,6 +1029,7 @@ const ui = {
     multEl.textContent = `×${Math.floor(n)}`;
     multEl.parentElement?.classList.toggle("hot", n >= 10);
     multEl.parentElement?.classList.toggle("blazing", n >= 40);
+    popStat(multEl);
     this.updateGun?.(n);
     if (xpBar) {
       const m = Math.max(1, Math.floor(n || 1));
@@ -1053,9 +1062,11 @@ const ui = {
       healthBar.style.width = `${Math.round(frac * 100)}%`;
       paintUi();
     }
+    popStat(livesEl);
   },
   updateBombs(n) {
     if (bombsEl) bombsEl.textContent = String(n);
+    popStat(bombsEl);
   },
   updateBest(n) {
     setBestDisplays(n);
@@ -1179,6 +1190,11 @@ if (level && pathObjectiveEl) {
 
     howTo?.classList.add("hidden");
     setOverlayMode("panel");
+    if (interruptPanel) {
+      interruptPanel.classList.remove("entering");
+      void interruptPanel.offsetWidth;
+      interruptPanel.classList.add("entering");
+    }
     overlay.classList.remove("hidden");
     applyUiFocus(pauseTargets(), 0);
     syncTouchChrome();

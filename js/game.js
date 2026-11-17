@@ -78,6 +78,7 @@ import {
   updatePlayer,
 } from "./entities.js";
 import {
+  addShake,
   addTrauma,
   applyCameraTransform,
   createCamera,
@@ -112,9 +113,11 @@ import {
   drawHudIcons,
   drawPlayer,
   drawCheckpoints,
+  drawDamageNumbers,
   enemyIsOutline,
 } from "./render.js";
 import { clampToFloor, drawCourtyard, insideFloor } from "./art.js";
+import { applyKnock, enemyFrame, fxLife, knock, TIMING } from "./motion.js";
 import {
   compositeBloom,
   compositeChromatic,
@@ -177,6 +180,8 @@ export class Game {
     this.cam = createCamera();
     this.bombFlash = 0;
     this.artFx = [];
+    this.damageNums = [];
+    this._accum = 0;
     this.nextLifeAt = EXTRA_LIFE_EVERY;
     this.nextBombAt = EXTRA_BOMB_EVERY;
     /** How many extra lives granted this run (escalating cost) */
@@ -298,8 +303,9 @@ export class Game {
     // Retina / HiDPI backing store (capped; lower on mobile quality + touch UI)
     const touchCap = GFX.TOUCH_MAX_DPR ?? 1.25;
     const dprCap = touchUi ? Math.min(GFX.MAX_DPR, touchCap) : GFX.MAX_DPR;
-    const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
+    const dpr = Math.max(1, Math.round(Math.min(window.devicePixelRatio || 1, dprCap)));
     this.dpr = dpr;
+    if (this.ctx) this.ctx.imageSmoothingEnabled = false;
     const bw = Math.max(1, Math.round(WORLD_W * dpr));
     const bh = Math.max(1, Math.round(WORLD_H * dpr));
 
@@ -385,6 +391,8 @@ start(opts = {}) {
     this.lastFloodAt = -999;
     this.bombFlash = 0;
     this.artFx = [];
+    this.damageNums = [];
+    this._accum = 0;
     this.nextLifeAt = EXTRA_LIFE_EVERY;
     this.nextBombAt = EXTRA_BOMB_EVERY;
     this.prevLifeAt = 0;
@@ -968,6 +976,8 @@ this.modeFlags = new Set();
     this.lastFloodAt = -999;
     this.waveLeft = 0;
     this.bombFlash = 0;
+    this.artFx = [];
+    this.damageNums = [];
     this.afterimages = [];
     this.geomVacuum = 0;
     this.particles.clear();
@@ -1513,6 +1523,7 @@ this.modeFlags = new Set();
                 : (PHRASE.APPROACH_NORMAL || 0.78) + jitter;
         }
         this.enemies.push(e);
+        this._artFx("poof", e.x, e.y);
         spawned += 1;
       }
     }
@@ -1676,11 +1687,13 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
       this.bombFlash = Math.max(this.bombFlash, 0.22);
       // Elite/big kills: punchy spike that can breach the combat soft-cap
       addTrauma(this.cam, 0.3, { big: true });
+      addShake(this.cam, 3.5);
       punchZoom(this.cam, 0.07);
     } else {
       this.bombFlash = Math.max(this.bombFlash, 0.08);
       // Fodder: light hit; soft-cap + faster decay prevent sustained earthquake
       addTrauma(this.cam, 0.07 + Math.min(0.05, this.mult * 0.0015));
+      addShake(this.cam, 1.6);
       punchZoom(this.cam, 0.02);
     }
     this._gridPulse(enemy.x, enemy.y, big ? 2.8 : 1.55);
@@ -1688,7 +1701,10 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     // Splitters birth children (not on bomb clear)
     if (!fromBomb && enemy.type === "splitter") {
       const kids = spawnSplitterChildren(enemy, this.elapsed);
-      for (const k of kids) this.enemies.push(k);
+      for (const k of kids) {
+        this.enemies.push(k);
+        this._artFx("poof", k.x, k.y);
+      }
     }
 
     if (!fromBomb) {
@@ -1736,10 +1752,13 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
         if (e.hp <= 0) {
           e.dead = true;
           this._onKill(e, { fromBomb: true });
+        } else {
+          this._sting(e, chip, e.x - this.player.x, e.y - this.player.y, 160);
         }
         continue;
       }
       e.dead = true;
+      this._artFx("poof", e.x, e.y);
       this.particles.burst(e.x, e.y, e.color, 22, 300);
       this.particles.ring(e.x, e.y, e.color, 12, 220);
       this._gridPulse(e.x, e.y, 1.0);
@@ -1957,6 +1976,9 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
   _playerHit(causeHint = null) {
     if (this.player.invuln > 0) return;
     const deathMeta = this._snapshotDeath(causeHint);
+    this._artFx("poof", deathMeta.x, deathMeta.y);
+    addShake(this.cam, 4);
+    this.player.flash = TIMING.hurtFlash;
     this.lives -= 1;
     this.ui.updateLives(this.lives);
 
@@ -2247,7 +2269,10 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
         this._softCap()
       );
       for (const a of atoms) {
-        if (this.enemies.length < atomCap) this.enemies.push(a);
+        if (this.enemies.length < atomCap) {
+          this.enemies.push(a);
+          this._artFx("poof", a.x, a.y);
+        }
       }
     }
     updateGeoms(this.geoms, this.player, dt, this.mult, this.geomVacuum);
@@ -2285,7 +2310,8 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
           b.dead = true;
           e.hp -= 1;
           const lethal = e.hp <= 0;
-          this._chipImpact(e, b.x, b.y, b.vx, b.vy, { lethal });
+          this._sting(e, 1, b.vx, b.vy, (e.maxHp || 1) > 1 ? 210 : 150);
+          this.particles.burst(b.x, b.y, e.color, 8, 140);
           this.audio.enemyHit();
           if (lethal) {
             e.dead = true;
@@ -2320,7 +2346,13 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     if (this.artFx) {
       for (let i = this.artFx.length - 1; i >= 0; i--) {
         this.artFx[i].age += dt;
-        if (this.artFx[i].age > 0.55) this.artFx.splice(i, 1);
+        if (this.artFx[i].age > fxLife(this.artFx[i].kind)) this.artFx.splice(i, 1);
+      }
+    }
+    if (this.damageNums) {
+      for (let i = this.damageNums.length - 1; i >= 0; i--) {
+        this.damageNums[i].age += dt;
+        if (this.damageNums[i].age >= this.damageNums[i].life) this.damageNums.splice(i, 1);
       }
     }
 
@@ -2345,6 +2377,25 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
   _artFx(kind, x, y) {
     if (!this.artFx) this.artFx = [];
     this.artFx.push({ kind, x, y, age: 0 });
+  }
+
+  _damageNumber(x, y, amount) {
+    if (!this.damageNums) this.damageNums = [];
+    const n = Math.max(1, amount | 0);
+    this.damageNums.push({ text: String(n), x, y: y - 8, age: 0, life: 0.7 });
+    if (this.damageNums.length > 24) this.damageNums.shift();
+  }
+
+  /** White flash, planted pose, knockback, a small shake, and a pixel number. */
+  _sting(enemy, amount, dx, dy, speed) {
+    if (!enemy) return;
+    if (!(enemy.hurt > 0)) enemy.holdFrame = enemyFrame(enemy);
+    enemy.hurt = TIMING.hurtHold;
+    enemy.flash = TIMING.hurtFlash;
+    knock(enemy, dx, dy, speed);
+    applyKnock(enemy, 1 / 60);
+    addShake(this.cam, amount > 1 ? 3.2 : 2.4);
+    this._damageNumber(enemy.x, enemy.y - (enemy.r || 16), amount);
   }
 
   _clampCourtyard() {
@@ -2414,6 +2465,7 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     drawAfterimages(wctx, this.afterimages);
     drawPlayer(wctx, this.player, this.time);
     this.particles.draw(wctx);
+    drawDamageNumbers(wctx, this.damageNums);
     if (this.state === "playing" && !GFX.PIXEL_ART) {
       const aim = this.input.aimVector();
       drawAimReticle(
@@ -2523,11 +2575,19 @@ _draw() {
   _loop(now) {
     const raw = this.lastTime ? (now - this.lastTime) / 1000 : 0;
     this.lastTime = now;
-    const dt = Math.min(raw, 1 / 30);
 
     if (this.state === "playing") {
-      this._update(dt);
+      this._accum = (this._accum || 0) + Math.min(raw, 0.1);
+      const step = 1 / 60;
+      let n = 0;
+      while (this._accum >= step && n < 5 && this.state === "playing") {
+        this._update(step);
+        this._accum -= step;
+        n += 1;
+      }
+      if (n >= 5) this._accum = 0;
     } else {
+      const dt = Math.min(raw, 1 / 30);
       if (this.input.consumeMute()) this.toggleMute();
       // Keyboard R / LB quick-restart. A/Start confirm the focused overlay button.
       if (this.state === "gameover" && this.input.consumeRestart()) {

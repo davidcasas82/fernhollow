@@ -165,12 +165,26 @@ body {
 }
 
 .stat-value {
+  display: inline-block;
   font-family: var(--display);
   font-size: clamp(1.45rem, 2.6vw, 1.85rem);
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--text);
   line-height: 1.15;
+}
+
+.stat-value.pop {
+  animation: stat-pop 0.28s cubic-bezier(0.16, 0.84, 0.32, 1);
+}
+
+@keyframes stat-pop {
+  from {
+    transform: translateY(5px);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 .stat-meter {
@@ -187,6 +201,7 @@ body {
   height: 100%;
   width: 0;
   background: var(--jade);
+  transition: width 0.4s cubic-bezier(0.16, 0.84, 0.32, 1);
 }
 
 .stat.bomb-stat .stat-meter i {
@@ -231,6 +246,7 @@ body {
   cursor: crosshair;
   background: #000005;
   image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .overlay {
@@ -296,10 +312,10 @@ body {
   backdrop-filter: none;
 }
 
-/* Interrupt: dim + slight blur over playfield */
+/* Interrupt: dim the courtyard. No blur — pixels stay square. */
 .overlay.mode-panel {
-  background: rgba(3, 5, 12, 0.72);
-  backdrop-filter: blur(5px);
+  background: rgba(3, 5, 12, 0.82);
+  backdrop-filter: none;
   pointer-events: auto;
 }
 
@@ -768,6 +784,10 @@ body {
 
 .interrupt-panel.hidden {
   display: none;
+}
+
+.interrupt-panel.entering {
+  animation: title-menu-in 0.4s cubic-bezier(0.16, 0.84, 0.32, 1) both;
 }
 
 /* ── Classic chrome GAME OVER (logo energy, no box) ── */

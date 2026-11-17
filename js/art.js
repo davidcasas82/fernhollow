@@ -268,10 +268,45 @@ export function clipFrame(sheet, name, time) {
   return clip.frames[i];
 }
 
+let flashCanvas = null;
+
+/**
+ * White silhouette of this frame, drawn with drawImage.
+ * The atlas sheet is not recolored. Skipped when there is no document
+ * (headless tests never pass a flash).
+ */
+function paintWhiteOverlay(ctx, image, frame, dx, dy, dw, dh, amount) {
+  if (!(amount > 0) || !image) return;
+  if (typeof document === "undefined" || !document.createElement) return;
+  const a = Math.max(0, Math.min(1, amount));
+  if (!flashCanvas) flashCanvas = document.createElement("canvas");
+  if (flashCanvas.width !== dw || flashCanvas.height !== dh) {
+    flashCanvas.width = dw;
+    flashCanvas.height = dh;
+  }
+  const fx = flashCanvas.getContext("2d");
+  if (!fx) return;
+  fx.imageSmoothingEnabled = false;
+  fx.setTransform(1, 0, 0, 1, 0, 0);
+  fx.globalCompositeOperation = "source-over";
+  fx.globalAlpha = 1;
+  fx.clearRect(0, 0, dw, dh);
+  fx.drawImage(image, frame.sx, frame.sy, frame.sw, frame.sh, 0, 0, dw, dh);
+  fx.globalCompositeOperation = "source-in";
+  fx.fillStyle = "#ffffff";
+  fx.fillRect(0, 0, dw, dh);
+  const base = ctx.globalAlpha == null ? 1 : ctx.globalAlpha;
+  ctx.imageSmoothingEnabled = false;
+  ctx.globalAlpha = base * a;
+  ctx.drawImage(flashCanvas, dx, dy);
+  ctx.globalAlpha = base;
+}
+
 /**
  * Draw one atlas frame. (x, y) is the actor center. The feet anchor places
  * the bitmap so that center stays on (x, y). Rotated pieces spin about the
- * frame center. Scale is the integer from the atlas.
+ * frame center. Scale is the integer from the atlas. flipX mirrors in place.
+ * flash is a brief white overlay on top of that same frame.
  */
 export function drawClip(ctx, sheet, name, time, x, y, opts = {}) {
   if (!ctx || !sheet?.image) return null;
@@ -287,35 +322,27 @@ export function drawClip(ctx, sheet, name, time, x, y, opts = {}) {
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   if (opts.alpha != null) ctx.globalAlpha = opts.alpha;
+  if (opts.flipX && opts.angle == null) {
+    const pivot = Math.round(x);
+    ctx.translate(pivot, 0);
+    ctx.scale(-1, 1);
+    ctx.translate(-pivot, 0);
+  }
+  let dx = 0;
+  let dy = 0;
   if (opts.angle != null) {
     ctx.translate(Math.round(x), Math.round(y));
     ctx.rotate(opts.angle);
-    ctx.drawImage(
-      sheet.image,
-      frame.sx,
-      frame.sy,
-      frame.sw,
-      frame.sh,
-      Math.round((-frame.sw / 2) * scale),
-      Math.round((-frame.sh / 2) * scale),
-      dw,
-      dh
-    );
+    dx = Math.round((-frame.sw / 2) * scale);
+    dy = Math.round((-frame.sh / 2) * scale);
   } else {
     const feetX = x + (frame.ax - frame.sw / 2) * scale;
     const feetY = y + (frame.ay - frame.sh / 2) * scale;
-    ctx.drawImage(
-      sheet.image,
-      frame.sx,
-      frame.sy,
-      frame.sw,
-      frame.sh,
-      Math.round(feetX - frame.ax * scale),
-      Math.round(feetY - frame.ay * scale),
-      dw,
-      dh
-    );
+    dx = Math.round(feetX - frame.ax * scale);
+    dy = Math.round(feetY - frame.ay * scale);
   }
+  ctx.drawImage(sheet.image, frame.sx, frame.sy, frame.sw, frame.sh, dx, dy, dw, dh);
+  if (opts.flash > 0) paintWhiteOverlay(ctx, sheet.image, frame, dx, dy, dw, dh, opts.flash);
   ctx.restore();
   return frame;
 }
