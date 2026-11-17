@@ -477,9 +477,8 @@ const room = particleCap() - this.particles.length;
         }
       } else {
         ctx.fillStyle = colorWithAlpha(p.color, a * 0.9);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2);
-        ctx.fill();
+        const s = Math.max(2, Math.round(p.size * a));
+        ctx.fillRect(Math.round(p.x - s / 2), Math.round(p.y - s / 2), s, s);
       }
     }
 
@@ -555,8 +554,8 @@ const room = particleCap() - this.particles.length;
       ctx.globalAlpha = a;
       if (f.tilt) ctx.rotate(f.tilt);
       ctx.font = f.stamp
-        ? "italic 900 46px 'Barlow Condensed', Outfit, sans-serif"
-        : "700 18px Outfit, sans-serif";
+        ? "700 28px ui-monospace, monospace"
+        : "700 16px ui-monospace, monospace";
       ctx.strokeStyle = "#12101c";
       ctx.lineWidth = f.stamp ? 10 : 3.5;
       ctx.lineJoin = "round";

@@ -13,6 +13,15 @@ import {
 } from "./constants.js";
 import { snakeSegments } from "./entities.js";
 import { bloom, colorWithAlpha, neonFillStroke, neonStroke } from "./fx.js";
+import { drawCourtyard } from "./courtyard.js";
+import {
+  drawPixelAfterimages,
+  drawPixelBullets,
+  drawPixelEnemies,
+  drawPixelGeoms,
+  drawPixelPlayer,
+  drawPixelReticle,
+} from "./sprites.js";
 
 /** Enemy still in red-outline telegraph phase (no solid fill / no collision). */
 export function enemyIsOutline(e) {
@@ -76,6 +85,8 @@ export function drawGrid(
 ) {
   const W = worldW || WORLD_W;
   const H = worldH || WORLD_H;
+  drawCourtyard(ctx, W, H, t);
+  return;
   const fancy = GFX.FANCY_GRID !== false;
   const stepMul = Math.max(1, GFX.GRID_STEP_MUL || 1);
   const step = Math.max(24, Math.round(GRID_STEP * stepMul));
@@ -395,6 +406,8 @@ function hoverY(y, bob = 0) {
 
 /** Motion-blur afterimages of the ship */
 export function drawAfterimages(ctx, images) {
+  drawPixelAfterimages(ctx, images);
+  return;
   ctx.save();
   ctx.globalCompositeOperation = "source-over";
   for (let i = 0; i < images.length; i++) {
@@ -430,6 +443,8 @@ function clawPath(ctx, r) {
 }
 
 export function drawPlayer(ctx, player, t = 0) {
+  drawPixelPlayer(ctx, player, t);
+  return;
   const invuln = player.invuln > 0;
   // Classic shmup blink, but keep a shield ring so grace is obvious
   const flashHide = invuln && Math.floor(player.invuln / 80) % 2 === 0;
@@ -494,6 +509,8 @@ export function drawPlayer(ctx, player, t = 0) {
 }
 
 export function drawBullets(ctx, bullets) {
+  drawPixelBullets(ctx, bullets);
+  return;
   ctx.save();
   ctx.globalCompositeOperation = "source-over";
   ctx.lineCap = "round";
@@ -554,6 +571,8 @@ export function drawBullets(ctx, bullets) {
 }
 
 export function drawGeoms(ctx, geoms, t = 0) {
+  drawPixelGeoms(ctx, geoms, t);
+  return;
   // Small sparkle pickups — deliberately not enemy-shaped (no big diamonds)
   // Fade/blink when about to expire so players feel the urgency to scoop.
   for (const g of geoms) {
@@ -812,6 +831,8 @@ const a = 0.75 + 0.25 * pulse;
 }
 
 export function drawEnemies(ctx, enemies, t = 0) {
+  drawPixelEnemies(ctx, enemies, t);
+  return;
   for (const e of enemies) {
     if (e.dead) continue;
     if (e.type === "snake") {
@@ -1181,6 +1202,8 @@ export function drawCheckpoints(ctx, checkpoints, nextIndex, time = 0) {
 }
 
 export function drawAimReticle(ctx, rx, ry, shipX, shipY) {
+  drawPixelReticle(ctx, rx, ry);
+  return;
   const hy = hoverY(shipY);
   const hry = hoverY(ry, 2);
   ctx.save();

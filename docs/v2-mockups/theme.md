@@ -2,7 +2,7 @@
 
 Draft for David to edit. Nothing in this file is locked.
 
-This is a look-and-theme mockup only. The original Geometry Arena stays as it is. v2 would be a separate, private, family-only game. No audio has been made yet.
+This is the look-and-theme guide for the public game. Fernhollow lives in this public repo and deploys on GitHub Pages from main. It is not a private or family-only project. The original Geometry Arena repo stays unchanged. No new chiptune has been added yet; this build still plays the existing neon soundtrack.
 
 ## Title
 
@@ -79,6 +79,6 @@ Sound effects:
 
 - Keep the title, or switch to one of the alternates?
 - Thistle Jays came out as birds in the mockup. We can keep that, or later draw them as thistle-people instead.
-- Any details to change in Ryan's hero look (the red neckerchief was added as a tiny hero accent; the green hoodie and jeans stay true to the photo)?
+- Any details to change in Ryan's hero look (the red neckerchief was added as a tiny hero accent; the green hoodie and jeans stay true to ryan-sprite.png)?
 - Music can wait until the look is approved.
 
