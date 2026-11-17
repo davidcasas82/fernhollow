@@ -507,6 +507,40 @@ function showTitleMenu() {
   game?.audio?.playMenuTheme?.();
 }
 
+/** Title music is started only from a user gesture. The menu paints first. */
+let titleThemePending = false;
+
+function titleMenuIsUp() {
+  return !!(
+    overlay &&
+    !overlay.classList.contains("hidden") &&
+    overlay.classList.contains("mode-title")
+  );
+}
+
+function startTitleTheme() {
+  if (!titleMenuIsUp()) return;
+  if (!game?.audio) {
+    titleThemePending = true;
+    return;
+  }
+  titleThemePending = false;
+  try {
+    game.audio.ensure();
+    game.audio.playMenuTheme();
+  } catch {
+    /* ignore */
+  }
+}
+
+function onTitleGesture() {
+  startTitleTheme();
+}
+
+window.addEventListener("keydown", onTitleGesture, true);
+window.addEventListener("pointerdown", onTitleGesture, true);
+window.addEventListener("touchstart", onTitleGesture, { capture: true, passive: true });
+
 function starGlyphs(n) {
   const s = Math.max(0, Math.min(3, n | 0));
   return "★".repeat(s) + "☆".repeat(3 - s);
@@ -1261,6 +1295,7 @@ paintFxChips();
 /** Assigned after UI helpers so splash dismiss can safely optional-chain audio. */
 game = new Game(canvas, ui);
 window.__fernhollow = game;
+if (titleThemePending) startTitleTheme();
 window.__arenaRuns = () => dumpRunsToConsole();
 window.__arenaRecent = () => getRecentRuns(10);
 window.__arenaDeaths = () => getRecentDeaths(20);

@@ -77,6 +77,36 @@ async function main() {
     await page.waitForSelector("#start-btn");
     log(true, "Canvas and Play button present");
 
+    await page.waitForFunction(() => window.__fernhollow?.audio);
+    const titleBefore = await page.evaluate(
+      () => window.__fernhollow.audio.chiptune.currentId
+    );
+    log(titleBefore == null, "Title music waits for a gesture", String(titleBefore));
+
+    await page.keyboard.press("KeyA");
+    await page.waitForFunction(
+      () => window.__fernhollow.audio.chiptune.currentId === "title"
+    );
+    const stillMenu = await page.evaluate(() => window.__fernhollow.state === "menu");
+    log(stillMenu, "First key starts the title track");
+
+    await page.goto(BASE, { waitUntil: "networkidle0" });
+    await page.waitForFunction(() => window.__fernhollow?.audio);
+    await page.mouse.click(160, 280);
+    await page.waitForFunction(
+      () => window.__fernhollow.audio.chiptune.currentId === "title"
+    );
+    log(true, "First click starts the title track");
+
+    await page.setViewport({ width: 1400, height: 900, hasTouch: true });
+    await page.goto(BASE, { waitUntil: "networkidle0" });
+    await page.waitForFunction(() => window.__fernhollow?.audio);
+    await page.touchscreen.tap(160, 280);
+    await page.waitForFunction(
+      () => window.__fernhollow.audio.chiptune.currentId === "title"
+    );
+    log(true, "First tap starts the title track");
+
     // Title overlay visible
     const overlayHidden = await page.$eval("#overlay", (el) => el.classList.contains("hidden"));
     log(!overlayHidden, "Menu overlay visible on boot");
