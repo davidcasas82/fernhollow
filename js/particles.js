@@ -452,6 +452,7 @@ const room = particleCap() - this.particles.length;
     ctx.save();
     ctx.globalCompositeOperation = "source-over";
 
+    if (!GFX.PIXEL_ART) {
     for (const p of this.particles) {
       const a = Math.max(0, p.life / p.maxLife);
       if (p.streak) {
@@ -539,6 +540,7 @@ const room = particleCap() - this.particles.length;
         ctx.lineTo(b.points[i].x, b.points[i].y);
       }
       ctx.stroke();
+    }
     }
 
     ctx.restore();

@@ -1,4 +1,6 @@
+import { loadArt } from "./art.js";
 import { Game } from "./game.js";
+import { mountTitleScreen } from "./title-screen.js";
 import {
   applyGfxQuality,
   GFX,
@@ -131,6 +133,7 @@ let pathResultLock = false;
 let pendingAction = null;
 let titleAction = null;
 let splashDone = false;
+let game = null;
 let helpOpen = false;
 let panelHelpOpen = false;
 let uiFocus = 0;
@@ -320,6 +323,8 @@ function showTitleMenu() {
     void titleMenu.offsetWidth;
     titleMenu.classList.add("entering");
   }
+  splash?.classList.remove("hidden");
+  document.body.classList.add("pixel-title");
   overlay?.classList.remove("hidden");
   applyUiFocus(titleTargets(), 0);
   syncTouchChrome();
@@ -342,7 +347,7 @@ function refreshTitleStars() {
 function setPathHudVisible(on) {
   pathObjStat?.classList.toggle("hidden", !on);
   if (!on && pathObjectiveEl) pathObjectiveEl.textContent = "—";
-  if (!on && levelLabelEl) levelLabelEl.textContent = "Level";
+  if (!on && levelLabelEl) levelLabelEl.textContent = "Wave";
   document.body.classList.toggle("path-run", !!on);
 }
 
@@ -804,8 +809,8 @@ const ui = {
     if (!gunLabelEl) return;
     const m = Math.floor(n || 1);
     if (m >= MULT_FOR_TRIPLE) gunLabelEl.textContent = "Triple";
-    else if (m >= MULT_FOR_DUAL) gunLabelEl.textContent = "Dual";
-    else gunLabelEl.textContent = `Needle · ${MULT_FOR_DUAL}`;
+    else if (m >= MULT_FOR_DUAL) gunLabelEl.textContent = "Twin";
+    else gunLabelEl.textContent = "Sun";
   },
   updateEconomy(data) {
     const lifeI = lifeMeterEl?.querySelector("i");
@@ -869,6 +874,8 @@ if (level && pathObjectiveEl) {
   },
   hideOverlay() {
     overlay.classList.add("hidden");
+    splash?.classList.add("hidden");
+    document.body.classList.remove("pixel-title");
     howTo?.classList.add("hidden");
     helpOpen = false;
     resetPanelHelp();
@@ -1038,25 +1045,16 @@ function dismissSplash() {
 }
 
 if (splash) {
-  overlay?.classList.add("hidden");
-
-  const onSplashInput = (e) => {
-    if (e.type === "keydown" && e.repeat) return;
-    if (e.type === "keydown") e.preventDefault();
-    dismissSplash();
-    window.removeEventListener("keydown", onSplashInput);
-    splash.removeEventListener("pointerdown", onSplashInput);
-  };
-
-  window.addEventListener("keydown", onSplashInput);
-  splash.addEventListener("pointerdown", onSplashInput);
+  showTitleMenu();
 } else {
   splashDone = true;
   showTitleMenu();
 }
 
+await loadArt();
+mountTitleScreen(document.getElementById("title-canvas"));
+
 /** Assigned after UI helpers so splash dismiss can safely optional-chain audio. */
-let game = null;
 game = new Game(canvas, ui);
 window.__geometryArena = game;
 window.__arenaRuns = () => dumpRunsToConsole();

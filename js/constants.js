@@ -191,22 +191,22 @@ export const SHADOW_OY = 11;
 export const GFX_QUALITY_PRESETS = {
   high: {
     id: "high",
-    maxDpr: 2,
-    touchMaxDpr: 1.5,
+    maxDpr: 1,
+    touchMaxDpr: 1,
     bloom: false,
     chromatic: false,
-    colorGrade: true,
-    vignette: true,
+    colorGrade: false,
+    vignette: false,
     /** Offscreen world buffer required for grade / vignette */
     offscreenWorld: true,
     /** Fat ink outline + enamel fill */
-    fancyNeon: true,
+    fancyNeon: false,
     localBloom: false,
     /** Warped reactive grid + underlay + under-grid */
     fancyGrid: true,
     gridStepMul: 1,
     /** Floor contact shadows under entities */
-    floorShadows: "all", // 'all' | 'player' | 'none'
+    floorShadows: "none", // 'all' | 'player' | 'none'
     particleScale: 1,
     particleMax: 1600,
     floaterMax: 56,
@@ -231,7 +231,7 @@ export const GFX_QUALITY_PRESETS = {
     fancyGrid: false,
     gridStepMul: 1.65,
     // Player shadow only — skip enemy/geom contact lights
-    floorShadows: "player",
+    floorShadows: "none",
     // Cut debris + vacuum density hard
     particleScale: 0.35,
     particleMax: 420,
@@ -310,6 +310,7 @@ export function applyGfxQuality(tier) {
  * those unless you also set QUALITY_FORCE.
  */
 export const GFX = {
+  PIXEL_ART: true,
   /** Active tier id after applyGfxQuality() */
   QUALITY: "high",
   /**
@@ -439,33 +440,33 @@ export const MORPH = {
 };
 
 export const COLORS = {
-  bg: "#07060d",
-  bgDeep: "#12101c",
-  grid: "rgba(243, 230, 200, 0.1)",
-  gridMajor: "rgba(243, 230, 200, 0.2)",
-  gridGlow: "rgba(255, 210, 58, 0.28)",
-  player: "#fff4dc",
-  playerGlow: "#2fd39a",
+  bg: "#14224f",
+  bgDeep: "#101a3d",
+  grid: "rgba(141, 123, 104, 0.25)",
+  gridMajor: "rgba(196, 180, 154, 0.35)",
+  gridGlow: "rgba(240, 210, 74, 0.28)",
+  player: "#3d9a4a",
+  playerGlow: "#f0d24a",
   playerCore: "#fff4dc",
-  bullet: "#fff4dc",
-  bulletCore: "#fff4dc",
-  bulletTail: "#ff4d4d",
-  wanderer: "#5ad4ff",
-  diamond: "#1f9a7a",
-  spinner: "#c9b8e0",
-  tank: "#e8a020",
-  snake: "#ff4d4d",
-  pink: "#ff6a5a",
-  splitter: "#a88bc4",
-  void: "#5a4868",
-  atom: "#d8cce8",
-  geom: "#ffd23a",
-  danger: "#ff4d4d",
-  bomb: "#ffd23a",
+  bullet: "#fff4b0",
+  bulletCore: "#fff4b0",
+  bulletTail: "#e07030",
+  wanderer: "#3d9a4a",
+  diamond: "#7a3ad4",
+  spinner: "#8b5a2b",
+  tank: "#6aaa55",
+  snake: "#2f8f4a",
+  pink: "#7dba4a",
+  splitter: "#8fce4a",
+  void: "#f0d24a",
+  atom: "#fff4b0",
+  geom: "#f0d24a",
+  danger: "#d23b3b",
+  bomb: "#f0d24a",
   text: "#fff4dc",
-  selector: "#2fd39a",
-  evolver: "#ffd23a",
-  ink: "#12101c",
+  selector: "#3d9a4a",
+  evolver: "#f0d24a",
+  ink: "#1a1420",
   paper: "#fff4dc",
 };
 

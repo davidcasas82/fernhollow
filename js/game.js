@@ -103,16 +103,18 @@ import { buildPhrase, filterJobsNearPlayer } from "./spawns.js";
 import {
   drawAfterimages,
   drawAimReticle,
+  drawArtFx,
   drawBombFlash,
   drawBullets,
   drawEnemies,
   drawFloorShadows,
   drawGeoms,
-  drawGrid,
+  drawHudIcons,
   drawPlayer,
   drawCheckpoints,
   enemyIsOutline,
 } from "./render.js";
+import { clampToFloor, drawCourtyard, insideFloor } from "./art.js";
 import {
   compositeBloom,
   compositeChromatic,
@@ -174,6 +176,7 @@ export class Game {
     this.lastFloodAt = -999;
     this.cam = createCamera();
     this.bombFlash = 0;
+    this.artFx = [];
     this.nextLifeAt = EXTRA_LIFE_EVERY;
     this.nextBombAt = EXTRA_BOMB_EVERY;
     /** How many extra lives granted this run (escalating cost) */
@@ -381,6 +384,7 @@ start(opts = {}) {
     this.lastCircleAt = -999;
     this.lastFloodAt = -999;
     this.bombFlash = 0;
+    this.artFx = [];
     this.nextLifeAt = EXTRA_LIFE_EVERY;
     this.nextBombAt = EXTRA_BOMB_EVERY;
     this.prevLifeAt = 0;
@@ -921,7 +925,7 @@ this.modeFlags = new Set();
     // Primary Resume + pause help deep-link (same how-to content as title)
     this.ui.showOverlay(
       "Paused",
-      "Take a breath. The shapes can wait.",
+      "Take a breath. The courtyard can wait.",
       false,
       "Resume",
       () => this.resume(),
@@ -1659,6 +1663,7 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
       enemy.type === "void" ||
       enemy.type === "splitter";
     // Sektori kill juice: denser front-loaded pop (short TTL handled in particles)
+    this._artFx("poof", enemy.x, enemy.y);
     this.particles.burst(enemy.x, enemy.y, enemy.color, 52 + enemy.r * 1.8, 400 + enemy.r * 12);
     this.particles.burst(enemy.x, enemy.y, COLORS.paper || "#fff4dc", 22 + (big ? 14 : 0), 320);
     this.particles.ring(enemy.x, enemy.y, enemy.color, big ? 44 : 24, big ? 420 : 280);
@@ -1720,6 +1725,7 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     this.ui.updateBombs?.(this.bombs);
     this.audio.bomb();
     this.bombFlash = 1.0;
+    this._artFx("shockwave", this.player.x, this.player.y);
     addTrauma(this.cam, 0.72, { big: true });
     punchZoom(this.cam, 0.12);
     this._gridPulse(this.player.x, this.player.y, 4.5);
@@ -2258,6 +2264,7 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
       }
     }
     updateGeoms(this.geoms, this.player, dt, this.mult, this.geomVacuum);
+    this._clampCourtyard();
     this._trySpawn(dt);
 
     // Continuous soft grid pull near voids
@@ -2290,6 +2297,7 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
         if (this._bulletHitsEnemy(b, e)) {
           b.dead = true;
           e.hp -= 1;
+          this._artFx("hit", b.x, b.y);
           this.audio.enemyHit();
           this.particles.burst(b.x, b.y, e.color, 10, 160);
           this.particles.burst(b.x, b.y, "#ffffff", 3, 100);
@@ -2323,10 +2331,30 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
 
     this.particles.update(dt);
     if (this.bombFlash > 0) this.bombFlash = Math.max(0, this.bombFlash - dt * 1.35);
+    if (this.artFx) {
+      for (let i = this.artFx.length - 1; i >= 0; i--) {
+        this.artFx[i].age += dt;
+        if (this.artFx[i].age > 0.55) this.artFx.splice(i, 1);
+      }
+    }
 
     // Path mode win/lose after sim step (score/enemies settled)
     if (this.pathLevel && !this.pathEnding) {
       this._tickPathMode(dt);
+    }
+  }
+
+  _artFx(kind, x, y) {
+    if (!this.artFx) this.artFx = [];
+    this.artFx.push({ kind, x, y, age: 0 });
+  }
+
+  _clampCourtyard() {
+    clampToFloor(this.player);
+    for (const e of this.enemies) clampToFloor(e);
+    for (const g of this.geoms) clampToFloor(g);
+    for (const b of this.bullets) {
+      if (!insideFloor(b)) b.dead = true;
     }
   }
 
@@ -2341,9 +2369,11 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
 
     wctx.save();
     applyCameraTransform(wctx, this.cam, dpr);
-    // Floor environment first…
-    drawGrid(wctx, 0, 0, this.gridImpulses, this.time, ww, wh, pulse);
-    if (this.arena) drawArena(wctx, this.arena, { time: this.time, cam: this.cam });
+    wctx.imageSmoothingEnabled = false;
+    drawCourtyard(wctx);
+    if (this.arena && this.arena.topology !== "rect") {
+      drawArena(wctx, this.arena, { time: this.time, cam: this.cam });
+    }
     if (this.pathLevel && this.pathCheckpoints) {
       drawCheckpoints(
         wctx,
@@ -2381,11 +2411,12 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     // …then shapes hovering above
     drawGeoms(wctx, this.geoms, this.time);
     drawEnemies(wctx, this.enemies, this.time);
-    drawBullets(wctx, this.bullets);
+    drawBullets(wctx, this.bullets, this.time);
+    drawArtFx(wctx, this.artFx, this.time);
     drawAfterimages(wctx, this.afterimages);
     drawPlayer(wctx, this.player, this.time);
     this.particles.draw(wctx);
-    if (this.state === "playing") {
+    if (this.state === "playing" && !GFX.PIXEL_ART) {
       const aim = this.input.aimVector();
       drawAimReticle(
         wctx,
@@ -2399,6 +2430,8 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
 
     // Screen-space flash in world pixels (not camera-warped)
     wctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    wctx.imageSmoothingEnabled = false;
+    drawHudIcons(wctx, this.lives, this.bombs);
     drawBombFlash(wctx, this.bombFlash);
     return pulse;
   }
@@ -2460,7 +2493,7 @@ _draw() {
 
     // Present base world
     main.setTransform(1, 0, 0, 1, 0, 0);
-    main.imageSmoothingEnabled = true;
+    main.imageSmoothingEnabled = false;
     main.fillStyle = "#000005";
     main.fillRect(0, 0, main.canvas.width, main.canvas.height);
     main.drawImage(this.worldCanvas, 0, 0);
