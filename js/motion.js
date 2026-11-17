@@ -1,8 +1,7 @@
 /**
- * Timing for atlas clips that already exist.
- * Hurt and death poses are not on the sheets. Those states use a white
- * flash and the poof on fx.png. Missing cells are listed in
- * docs/previews/animation/frame-spec.md.
+ * Timing for atlas clips. Walk and idle stay on the base sheets.
+ * Hurt, attack, and death play from the v3 extra sheets.
+ * Hits also flash white and puff from fx.png.
  */
 
 export const TIMING = {

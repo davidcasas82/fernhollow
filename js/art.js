@@ -86,30 +86,6 @@ function extraClips(extra) {
   return { clips, file: { file: extra.file, w, h } };
 }
 
-function uiSheet(extra) {
-  if (!extra?.file || !extra.cells) throw new Error("v3 ui sheet is missing cells");
-  const scale = integerScale(extra.draw_scale, extra.file);
-  const clips = {};
-  for (const [name, cell] of Object.entries(extra.cells)) {
-    clips[name] = {
-      file: extra.file,
-      fps: 0,
-      loop: false,
-      frames: [
-        cellFrame(
-          cell,
-          { x: Math.round(cell.w / 2), y: Math.round(cell.h / 2) },
-          scale
-        ),
-      ],
-    };
-  }
-  return {
-    sheet: { id: "ui", file: extra.file, clips },
-    file: { file: extra.file, w: extra.w, h: extra.h },
-  };
-}
-
 function clipFromAnim(sprite, anim) {
   const frames = [];
   for (const ref of anim.frames) {
