@@ -47,8 +47,8 @@ export const SPAWN_PATTERN = Object.freeze({
 
 /** Chapter display titles (UI). */
 export const CHAPTER_TITLES = Object.freeze({
-  1: "Courtyard",
-  2: "Siege",
+  1: "Ink Primer",
+  2: "Pressure Geometry",
 });
 
 /**
@@ -265,8 +265,8 @@ export const PATH_THEMES = Object.freeze({
 export const LEVELS = [
   {
     id: "path-01-grid-wake",
-    name: "Courtyard Dawn",
-    tagline: "Learn the stones.",
+    name: "Grid Wake",
+    tagline: "Learn the ink floor.",
     chapter: 1,
     order: 1,
     mode: MODE.EVOLVED,
@@ -286,13 +286,13 @@ export const LEVELS = [
       score: [80000, 180000],
       peakMult: [15, 35],
     },
-    skillLesson: "Strafe, scoop Sunseeds, trust the sun-bolts.",
+    skillLesson: "Strafe, scoop geoms, trust the needle gun.",
     unlockDefault: true,
   },
   {
     id: "path-02-deadline-drill",
-    name: "Crown Clock",
-    tagline: "Hit the score before the clock runs out.",
+    name: "Deadline Drill",
+    tagline: "Hit the score before the clock dies.",
     chapter: 1,
     order: 2,
     mode: MODE.DEADLINE,
@@ -317,8 +317,8 @@ export const LEVELS = [
   },
   {
     id: "path-03-wave-lane",
-    name: "Gate Lane",
-    tagline: "Eight waves in a lane. Read them, sweep, keep moving.",
+    name: "Wave Lane",
+    tagline: "Eight scripted waves in a lane. Read, sweep, don't get pinched.",
     chapter: 1,
     order: 3,
     mode: MODE.WAVES,
@@ -409,8 +409,8 @@ export const LEVELS = [
   },
   {
     id: "path-04-cross-gates",
-    name: "Banner Cross",
-    tagline: "Touch every banner gate before the clock runs out.",
+    name: "Cross Gates",
+    tagline: "Hit every gate. Survive the clock. Gates clear a pocket — no points.",
     chapter: 1,
     order: 4,
     mode: MODE.CHECKPOINT,
@@ -462,8 +462,8 @@ export const LEVELS = [
   },
   {
     id: "path-05-donut-orbit",
-    name: "Fountain Ring",
-    tagline: "Stay on the ring. The fountain pool is off limits.",
+    name: "Donut Orbit",
+    tagline: "Survive the ring. The hole is death.",
     chapter: 2,
     order: 5,
     mode: MODE.EVOLVED,
@@ -487,8 +487,8 @@ export const LEVELS = [
   },
   {
     id: "path-06-split-signal",
-    name: "Twin Courts",
-    tagline: "Eight waves across two courts. Don't get stuck in the gap.",
+    name: "Split Signal",
+    tagline: "Eight chamber waves. One seal beat. Don't get trapped.",
     chapter: 2,
     order: 6,
     mode: MODE.WAVES,
@@ -579,8 +579,8 @@ export const LEVELS = [
   },
   {
     id: "path-07-torus-rush",
-    name: "Wrap Walk",
-    tagline: "A high score, a short clock, and the edges wrap around.",
+    name: "Torus Rush",
+    tagline: "High target, short clock, thin lives.",
     chapter: 2,
     order: 7,
     mode: MODE.DEADLINE,
@@ -605,8 +605,8 @@ export const LEVELS = [
   },
   {
     id: "path-08-boss-pulse",
-    name: "Moss Giant",
-    tagline: "A big Moss Turtle. Bombs chip him. The floor closes in.",
+    name: "Boss Pulse",
+    tagline: "Three-phase elite. Bombs chip. The floor pinches.",
     chapter: 2,
     order: 8,
     mode: MODE.BOSS_LITE,
@@ -623,7 +623,7 @@ export const LEVELS = [
         hp: 90,
         score: 18000,
         spawn: { x: 800, y: 200 },
-        label: "MOSS GIANT",
+        label: "PULSE TANK",
         clearAdds: true,
         adds: {
           everySec: 5,

@@ -1,6 +1,4 @@
-# Ryan and the Siege of Fernhollow — Levels Design Lock (MVP)
-
-> Stage rules are unchanged. Player-facing level names now use courtyard language. This note keeps the original systems vocabulary.
+# Geometry Arena — Levels Design Lock (MVP)
 
 **Status:** SHIPPED topologies (PR B, 2026-08-16) — `js/levels.js` is the number source of truth.  
 **Audience:** arena-topology · mode-runtime · path-ui-progress · game integration agents  
