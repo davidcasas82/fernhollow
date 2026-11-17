@@ -771,5 +771,1271 @@
     "void": "gust-bloom",
     "atom": "pollen-puff",
     "pathBoss": "moss-giant"
+  },
+  "v3_extras": {
+    "ryan": {
+      "file": "ryan-extra.png",
+      "base": "ryan",
+      "frame_w": 80,
+      "frame_h": 96,
+      "anchor": {
+        "x": 40,
+        "y": 93,
+        "note": "feet"
+      },
+      "scale": 1,
+      "cells": {
+        "hurt_down": {
+          "x": 0,
+          "y": 0,
+          "w": 80,
+          "h": 96
+        },
+        "hurt_up": {
+          "x": 80,
+          "y": 0,
+          "w": 80,
+          "h": 96
+        },
+        "hurt_left": {
+          "x": 160,
+          "y": 0,
+          "w": 80,
+          "h": 96
+        },
+        "hurt_right": {
+          "x": 240,
+          "y": 0,
+          "w": 80,
+          "h": 96
+        },
+        "death_down_0": {
+          "x": 0,
+          "y": 96,
+          "w": 80,
+          "h": 96
+        },
+        "death_down_1": {
+          "x": 80,
+          "y": 96,
+          "w": 80,
+          "h": 96
+        },
+        "death_down_2": {
+          "x": 160,
+          "y": 96,
+          "w": 80,
+          "h": 96
+        },
+        "death_down_3": {
+          "x": 240,
+          "y": 96,
+          "w": 80,
+          "h": 96
+        },
+        "death_up_0": {
+          "x": 0,
+          "y": 192,
+          "w": 80,
+          "h": 96
+        },
+        "death_up_1": {
+          "x": 80,
+          "y": 192,
+          "w": 80,
+          "h": 96
+        },
+        "death_up_2": {
+          "x": 160,
+          "y": 192,
+          "w": 80,
+          "h": 96
+        },
+        "death_up_3": {
+          "x": 240,
+          "y": 192,
+          "w": 80,
+          "h": 96
+        },
+        "death_left_0": {
+          "x": 0,
+          "y": 288,
+          "w": 80,
+          "h": 96
+        },
+        "death_left_1": {
+          "x": 80,
+          "y": 288,
+          "w": 80,
+          "h": 96
+        },
+        "death_left_2": {
+          "x": 160,
+          "y": 288,
+          "w": 80,
+          "h": 96
+        },
+        "death_left_3": {
+          "x": 240,
+          "y": 288,
+          "w": 80,
+          "h": 96
+        },
+        "death_right_0": {
+          "x": 0,
+          "y": 384,
+          "w": 80,
+          "h": 96
+        },
+        "death_right_1": {
+          "x": 80,
+          "y": 384,
+          "w": 80,
+          "h": 96
+        },
+        "death_right_2": {
+          "x": 160,
+          "y": 384,
+          "w": 80,
+          "h": 96
+        },
+        "death_right_3": {
+          "x": 240,
+          "y": 384,
+          "w": 80,
+          "h": 96
+        }
+      },
+      "animations": {
+        "hurt_down": {
+          "frames": [
+            "hurt_down"
+          ],
+          "fps": 0
+        },
+        "death_down": {
+          "frames": [
+            "death_down_0",
+            "death_down_1",
+            "death_down_2",
+            "death_down_3"
+          ],
+          "fps": 8,
+          "loop": false
+        },
+        "hurt_up": {
+          "frames": [
+            "hurt_up"
+          ],
+          "fps": 0
+        },
+        "death_up": {
+          "frames": [
+            "death_up_0",
+            "death_up_1",
+            "death_up_2",
+            "death_up_3"
+          ],
+          "fps": 8,
+          "loop": false
+        },
+        "hurt_left": {
+          "frames": [
+            "hurt_left"
+          ],
+          "fps": 0
+        },
+        "death_left": {
+          "frames": [
+            "death_left_0",
+            "death_left_1",
+            "death_left_2",
+            "death_left_3"
+          ],
+          "fps": 8,
+          "loop": false
+        },
+        "hurt_right": {
+          "frames": [
+            "hurt_right"
+          ],
+          "fps": 0
+        },
+        "death_right": {
+          "frames": [
+            "death_right_0",
+            "death_right_1",
+            "death_right_2",
+            "death_right_3"
+          ],
+          "fps": 8,
+          "loop": false
+        }
+      }
+    },
+    "puffling": {
+      "file": "puffling-extra.png",
+      "base": "puffling",
+      "frame_w": 56,
+      "frame_h": 56,
+      "anchor": {
+        "x": 28,
+        "y": 55
+      },
+      "scale": 1,
+      "cells": {
+        "attack_0": {
+          "x": 0,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "attack_1": {
+          "x": 56,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "hurt": {
+          "x": 112,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "death_0": {
+          "x": 168,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "death_1": {
+          "x": 224,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "death_2": {
+          "x": 280,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "death_3": {
+          "x": 336,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        }
+      },
+      "facing": "same as the frames in puffling.png (front-facing)",
+      "animations": {
+        "attack": {
+          "frames": [
+            "attack_0",
+            "attack_1"
+          ],
+          "fps": 8
+        },
+        "hurt": {
+          "frames": [
+            "hurt"
+          ],
+          "fps": 0
+        },
+        "death": {
+          "frames": [
+            "death_0",
+            "death_1",
+            "death_2",
+            "death_3"
+          ],
+          "fps": 8,
+          "loop": false
+        }
+      }
+    },
+    "thistle-jay": {
+      "file": "thistle-jay-extra.png",
+      "base": "thistle-jay",
+      "frame_w": 64,
+      "frame_h": 56,
+      "anchor": {
+        "x": 32,
+        "y": 55
+      },
+      "scale": 1,
+      "cells": {
+        "attack_0": {
+          "x": 0,
+          "y": 0,
+          "w": 64,
+          "h": 56
+        },
+        "attack_1": {
+          "x": 64,
+          "y": 0,
+          "w": 64,
+          "h": 56
+        },
+        "hurt": {
+          "x": 128,
+          "y": 0,
+          "w": 64,
+          "h": 56
+        },
+        "death_0": {
+          "x": 192,
+          "y": 0,
+          "w": 64,
+          "h": 56
+        },
+        "death_1": {
+          "x": 256,
+          "y": 0,
+          "w": 64,
+          "h": 56
+        },
+        "death_2": {
+          "x": 320,
+          "y": 0,
+          "w": 64,
+          "h": 56
+        },
+        "death_3": {
+          "x": 384,
+          "y": 0,
+          "w": 64,
+          "h": 56
+        }
+      },
+      "facing": "same as the frames in thistle-jay.png (right)",
+      "animations": {
+        "attack": {
+          "frames": [
+            "attack_0",
+            "attack_1"
+          ],
+          "fps": 8
+        },
+        "hurt": {
+          "frames": [
+            "hurt"
+          ],
+          "fps": 0
+        },
+        "death": {
+          "frames": [
+            "death_0",
+            "death_1",
+            "death_2",
+            "death_3"
+          ],
+          "fps": 8,
+          "loop": false
+        }
+      }
+    },
+    "fern-hare": {
+      "file": "fern-hare-extra.png",
+      "base": "fern-hare",
+      "frame_w": 56,
+      "frame_h": 56,
+      "anchor": {
+        "x": 28,
+        "y": 55
+      },
+      "scale": 1,
+      "cells": {
+        "attack_0": {
+          "x": 0,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "attack_1": {
+          "x": 56,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "hurt": {
+          "x": 112,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "death_0": {
+          "x": 168,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "death_1": {
+          "x": 224,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "death_2": {
+          "x": 280,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "death_3": {
+          "x": 336,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        }
+      },
+      "facing": "same as the frames in fern-hare.png (left (3/4))",
+      "animations": {
+        "attack": {
+          "frames": [
+            "attack_0",
+            "attack_1"
+          ],
+          "fps": 8
+        },
+        "hurt": {
+          "frames": [
+            "hurt"
+          ],
+          "fps": 0
+        },
+        "death": {
+          "frames": [
+            "death_0",
+            "death_1",
+            "death_2",
+            "death_3"
+          ],
+          "fps": 8,
+          "loop": false
+        }
+      }
+    },
+    "acorn-spinner": {
+      "file": "acorn-spinner-extra.png",
+      "base": "acorn-spinner",
+      "frame_w": 56,
+      "frame_h": 56,
+      "anchor": {
+        "x": 28,
+        "y": 55
+      },
+      "scale": 1,
+      "cells": {
+        "attack_0": {
+          "x": 0,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "attack_1": {
+          "x": 56,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "hurt": {
+          "x": 112,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "death_0": {
+          "x": 168,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "death_1": {
+          "x": 224,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "death_2": {
+          "x": 280,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        },
+        "death_3": {
+          "x": 336,
+          "y": 0,
+          "w": 56,
+          "h": 56
+        }
+      },
+      "facing": "same as the frames in acorn-spinner.png (front-facing)",
+      "animations": {
+        "attack": {
+          "frames": [
+            "attack_0",
+            "attack_1"
+          ],
+          "fps": 8
+        },
+        "hurt": {
+          "frames": [
+            "hurt"
+          ],
+          "fps": 0
+        },
+        "death": {
+          "frames": [
+            "death_0",
+            "death_1",
+            "death_2",
+            "death_3"
+          ],
+          "fps": 8,
+          "loop": false
+        }
+      }
+    },
+    "split-sprout": {
+      "file": "split-sprout-extra.png",
+      "base": "split-sprout",
+      "frame_w": 64,
+      "frame_h": 64,
+      "anchor": {
+        "x": 32,
+        "y": 63
+      },
+      "scale": 1,
+      "cells": {
+        "attack_0": {
+          "x": 0,
+          "y": 0,
+          "w": 64,
+          "h": 64
+        },
+        "attack_1": {
+          "x": 64,
+          "y": 0,
+          "w": 64,
+          "h": 64
+        },
+        "hurt": {
+          "x": 128,
+          "y": 0,
+          "w": 64,
+          "h": 64
+        },
+        "death_0": {
+          "x": 192,
+          "y": 0,
+          "w": 64,
+          "h": 64
+        },
+        "death_1": {
+          "x": 256,
+          "y": 0,
+          "w": 64,
+          "h": 64
+        },
+        "death_2": {
+          "x": 320,
+          "y": 0,
+          "w": 64,
+          "h": 64
+        },
+        "death_3": {
+          "x": 384,
+          "y": 0,
+          "w": 64,
+          "h": 64
+        }
+      },
+      "facing": "same as the frames in split-sprout.png (front-facing)",
+      "animations": {
+        "attack": {
+          "frames": [
+            "attack_0",
+            "attack_1"
+          ],
+          "fps": 8
+        },
+        "hurt": {
+          "frames": [
+            "hurt"
+          ],
+          "fps": 0
+        },
+        "death": {
+          "frames": [
+            "death_0",
+            "death_1",
+            "death_2",
+            "death_3"
+          ],
+          "fps": 8,
+          "loop": false
+        }
+      }
+    },
+    "sprout-bud": {
+      "file": "sprout-bud-extra.png",
+      "base": "sprout-bud",
+      "frame_w": 40,
+      "frame_h": 40,
+      "anchor": {
+        "x": 20,
+        "y": 39
+      },
+      "scale": 1,
+      "cells": {
+        "attack_0": {
+          "x": 0,
+          "y": 0,
+          "w": 40,
+          "h": 40
+        },
+        "attack_1": {
+          "x": 40,
+          "y": 0,
+          "w": 40,
+          "h": 40
+        },
+        "hurt": {
+          "x": 80,
+          "y": 0,
+          "w": 40,
+          "h": 40
+        },
+        "death_0": {
+          "x": 120,
+          "y": 0,
+          "w": 40,
+          "h": 40
+        },
+        "death_1": {
+          "x": 160,
+          "y": 0,
+          "w": 40,
+          "h": 40
+        },
+        "death_2": {
+          "x": 200,
+          "y": 0,
+          "w": 40,
+          "h": 40
+        },
+        "death_3": {
+          "x": 240,
+          "y": 0,
+          "w": 40,
+          "h": 40
+        }
+      },
+      "facing": "same as the frames in sprout-bud.png (front-facing)",
+      "animations": {
+        "attack": {
+          "frames": [
+            "attack_0",
+            "attack_1"
+          ],
+          "fps": 8
+        },
+        "hurt": {
+          "frames": [
+            "hurt"
+          ],
+          "fps": 0
+        },
+        "death": {
+          "frames": [
+            "death_0",
+            "death_1",
+            "death_2",
+            "death_3"
+          ],
+          "fps": 8,
+          "loop": false
+        }
+      }
+    },
+    "ivy-wisp": {
+      "file": "ivy-wisp-extra.png",
+      "base": "ivy-wisp",
+      "frame_w": 40,
+      "frame_h": 48,
+      "anchor": {
+        "x": 20,
+        "y": 47
+      },
+      "scale": 1,
+      "cells": {
+        "attack_0": {
+          "x": 0,
+          "y": 0,
+          "w": 40,
+          "h": 48
+        },
+        "attack_1": {
+          "x": 40,
+          "y": 0,
+          "w": 40,
+          "h": 48
+        },
+        "hurt": {
+          "x": 80,
+          "y": 0,
+          "w": 40,
+          "h": 48
+        },
+        "death_0": {
+          "x": 120,
+          "y": 0,
+          "w": 40,
+          "h": 48
+        },
+        "death_1": {
+          "x": 160,
+          "y": 0,
+          "w": 40,
+          "h": 48
+        },
+        "death_2": {
+          "x": 200,
+          "y": 0,
+          "w": 40,
+          "h": 48
+        },
+        "death_3": {
+          "x": 240,
+          "y": 0,
+          "w": 40,
+          "h": 48
+        }
+      },
+      "facing": "same as the frames in ivy-wisp.png (front-facing)",
+      "animations": {
+        "attack": {
+          "frames": [
+            "attack_0",
+            "attack_1"
+          ],
+          "fps": 8
+        },
+        "hurt": {
+          "frames": [
+            "hurt"
+          ],
+          "fps": 0
+        },
+        "death": {
+          "frames": [
+            "death_0",
+            "death_1",
+            "death_2",
+            "death_3"
+          ],
+          "fps": 8,
+          "loop": false
+        }
+      }
+    },
+    "ivy-segment": {
+      "file": "ivy-segment-extra.png",
+      "base": "ivy-segment",
+      "frame_w": 28,
+      "frame_h": 32,
+      "anchor": {
+        "x": 14,
+        "y": 31
+      },
+      "scale": 1,
+      "cells": {
+        "attack_0": {
+          "x": 0,
+          "y": 0,
+          "w": 28,
+          "h": 32
+        },
+        "attack_1": {
+          "x": 28,
+          "y": 0,
+          "w": 28,
+          "h": 32
+        },
+        "hurt": {
+          "x": 56,
+          "y": 0,
+          "w": 28,
+          "h": 32
+        },
+        "death_0": {
+          "x": 84,
+          "y": 0,
+          "w": 28,
+          "h": 32
+        },
+        "death_1": {
+          "x": 112,
+          "y": 0,
+          "w": 28,
+          "h": 32
+        },
+        "death_2": {
+          "x": 140,
+          "y": 0,
+          "w": 28,
+          "h": 32
+        },
+        "death_3": {
+          "x": 168,
+          "y": 0,
+          "w": 28,
+          "h": 32
+        }
+      },
+      "facing": "same as the frames in ivy-segment.png (front-facing)",
+      "animations": {
+        "attack": {
+          "frames": [
+            "attack_0",
+            "attack_1"
+          ],
+          "fps": 8
+        },
+        "hurt": {
+          "frames": [
+            "hurt"
+          ],
+          "fps": 0
+        },
+        "death": {
+          "frames": [
+            "death_0",
+            "death_1",
+            "death_2",
+            "death_3"
+          ],
+          "fps": 8,
+          "loop": false
+        }
+      }
+    },
+    "moss-turtle": {
+      "file": "moss-turtle-extra.png",
+      "base": "moss-turtle",
+      "frame_w": 80,
+      "frame_h": 56,
+      "anchor": {
+        "x": 40,
+        "y": 55
+      },
+      "scale": 1,
+      "cells": {
+        "attack_0": {
+          "x": 0,
+          "y": 0,
+          "w": 80,
+          "h": 56
+        },
+        "attack_1": {
+          "x": 80,
+          "y": 0,
+          "w": 80,
+          "h": 56
+        },
+        "hurt": {
+          "x": 160,
+          "y": 0,
+          "w": 80,
+          "h": 56
+        },
+        "death_0": {
+          "x": 240,
+          "y": 0,
+          "w": 80,
+          "h": 56
+        },
+        "death_1": {
+          "x": 320,
+          "y": 0,
+          "w": 80,
+          "h": 56
+        },
+        "death_2": {
+          "x": 400,
+          "y": 0,
+          "w": 80,
+          "h": 56
+        },
+        "death_3": {
+          "x": 480,
+          "y": 0,
+          "w": 80,
+          "h": 56
+        }
+      },
+      "facing": "same as the frames in moss-turtle.png (left)",
+      "animations": {
+        "attack": {
+          "frames": [
+            "attack_0",
+            "attack_1"
+          ],
+          "fps": 8
+        },
+        "hurt": {
+          "frames": [
+            "hurt"
+          ],
+          "fps": 0
+        },
+        "death": {
+          "frames": [
+            "death_0",
+            "death_1",
+            "death_2",
+            "death_3"
+          ],
+          "fps": 8,
+          "loop": false
+        }
+      }
+    },
+    "gust-bloom": {
+      "file": "gust-bloom-extra.png",
+      "base": "gust-bloom",
+      "frame_w": 56,
+      "frame_h": 72,
+      "anchor": {
+        "x": 28,
+        "y": 71
+      },
+      "scale": 1,
+      "cells": {
+        "attack_0": {
+          "x": 0,
+          "y": 0,
+          "w": 56,
+          "h": 72
+        },
+        "attack_1": {
+          "x": 56,
+          "y": 0,
+          "w": 56,
+          "h": 72
+        },
+        "hurt": {
+          "x": 112,
+          "y": 0,
+          "w": 56,
+          "h": 72
+        },
+        "death_0": {
+          "x": 168,
+          "y": 0,
+          "w": 56,
+          "h": 72
+        },
+        "death_1": {
+          "x": 224,
+          "y": 0,
+          "w": 56,
+          "h": 72
+        },
+        "death_2": {
+          "x": 280,
+          "y": 0,
+          "w": 56,
+          "h": 72
+        },
+        "death_3": {
+          "x": 336,
+          "y": 0,
+          "w": 56,
+          "h": 72
+        }
+      },
+      "facing": "same as the frames in gust-bloom.png (front-facing)",
+      "animations": {
+        "attack": {
+          "frames": [
+            "attack_0",
+            "attack_1"
+          ],
+          "fps": 8
+        },
+        "hurt": {
+          "frames": [
+            "hurt"
+          ],
+          "fps": 0
+        },
+        "death": {
+          "frames": [
+            "death_0",
+            "death_1",
+            "death_2",
+            "death_3"
+          ],
+          "fps": 8,
+          "loop": false
+        }
+      }
+    },
+    "pollen-puff": {
+      "file": "pollen-puff-extra.png",
+      "base": "pollen-puff",
+      "frame_w": 28,
+      "frame_h": 28,
+      "anchor": {
+        "x": 14,
+        "y": 27
+      },
+      "scale": 1,
+      "cells": {
+        "attack_0": {
+          "x": 0,
+          "y": 0,
+          "w": 28,
+          "h": 28
+        },
+        "attack_1": {
+          "x": 28,
+          "y": 0,
+          "w": 28,
+          "h": 28
+        },
+        "hurt": {
+          "x": 56,
+          "y": 0,
+          "w": 28,
+          "h": 28
+        },
+        "death_0": {
+          "x": 84,
+          "y": 0,
+          "w": 28,
+          "h": 28
+        },
+        "death_1": {
+          "x": 112,
+          "y": 0,
+          "w": 28,
+          "h": 28
+        },
+        "death_2": {
+          "x": 140,
+          "y": 0,
+          "w": 28,
+          "h": 28
+        },
+        "death_3": {
+          "x": 168,
+          "y": 0,
+          "w": 28,
+          "h": 28
+        }
+      },
+      "facing": "same as the frames in pollen-puff.png (front-facing)",
+      "animations": {
+        "attack": {
+          "frames": [
+            "attack_0",
+            "attack_1"
+          ],
+          "fps": 8
+        },
+        "hurt": {
+          "frames": [
+            "hurt"
+          ],
+          "fps": 0
+        },
+        "death": {
+          "frames": [
+            "death_0",
+            "death_1",
+            "death_2",
+            "death_3"
+          ],
+          "fps": 8,
+          "loop": false
+        }
+      }
+    },
+    "moss-giant": {
+      "file": "moss-giant-extra.png",
+      "base": "moss-giant",
+      "frame_w": 128,
+      "frame_h": 96,
+      "anchor": {
+        "x": 64,
+        "y": 95
+      },
+      "scale": 1,
+      "cells": {
+        "attack_0": {
+          "x": 0,
+          "y": 0,
+          "w": 128,
+          "h": 96
+        },
+        "attack_1": {
+          "x": 128,
+          "y": 0,
+          "w": 128,
+          "h": 96
+        },
+        "hurt": {
+          "x": 256,
+          "y": 0,
+          "w": 128,
+          "h": 96
+        },
+        "death_0": {
+          "x": 384,
+          "y": 0,
+          "w": 128,
+          "h": 96
+        },
+        "death_1": {
+          "x": 512,
+          "y": 0,
+          "w": 128,
+          "h": 96
+        },
+        "death_2": {
+          "x": 640,
+          "y": 0,
+          "w": 128,
+          "h": 96
+        },
+        "death_3": {
+          "x": 768,
+          "y": 0,
+          "w": 128,
+          "h": 96
+        }
+      },
+      "facing": "same as the frames in moss-giant.png (left)",
+      "animations": {
+        "attack": {
+          "frames": [
+            "attack_0",
+            "attack_1"
+          ],
+          "fps": 8
+        },
+        "hurt": {
+          "frames": [
+            "hurt"
+          ],
+          "fps": 0
+        },
+        "death": {
+          "frames": [
+            "death_0",
+            "death_1",
+            "death_2",
+            "death_3"
+          ],
+          "fps": 8,
+          "loop": false
+        }
+      }
+    },
+    "ui": {
+      "file": "ui-frames.png",
+      "w": 460,
+      "h": 32,
+      "cells": {
+        "panel-corner": {
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 12
+        },
+        "panel-edge-h": {
+          "x": 12,
+          "y": 0,
+          "w": 12,
+          "h": 12
+        },
+        "panel-edge-v": {
+          "x": 24,
+          "y": 0,
+          "w": 12,
+          "h": 12
+        },
+        "panel-fill": {
+          "x": 36,
+          "y": 0,
+          "w": 12,
+          "h": 12
+        },
+        "banner": {
+          "x": 48,
+          "y": 0,
+          "w": 160,
+          "h": 32
+        },
+        "bar-back": {
+          "x": 208,
+          "y": 0,
+          "w": 96,
+          "h": 12
+        },
+        "bar-heart": {
+          "x": 304,
+          "y": 0,
+          "w": 8,
+          "h": 8
+        },
+        "bar-sun": {
+          "x": 312,
+          "y": 0,
+          "w": 8,
+          "h": 8
+        },
+        "cursor": {
+          "x": 320,
+          "y": 0,
+          "w": 12,
+          "h": 12,
+          "hotspot": {
+            "x": 0,
+            "y": 6
+          }
+        },
+        "button": {
+          "x": 332,
+          "y": 0,
+          "w": 96,
+          "h": 24
+        },
+        "favicon": {
+          "x": 428,
+          "y": 0,
+          "w": 32,
+          "h": 32
+        }
+      },
+      "nine_slice": {
+        "frames": [
+          "panel-corner",
+          "panel-edge-h",
+          "panel-edge-v",
+          "panel-fill"
+        ],
+        "corner": 12,
+        "note": "Corner is top-left; mirror for the other three. Menu panel = 160x120 source at scale 2 (320x240)."
+      },
+      "draw_scale": 2,
+      "favicons": [
+        "favicon-32.png",
+        "favicon-16.png"
+      ]
+    }
   }
 }
