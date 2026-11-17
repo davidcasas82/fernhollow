@@ -6,4 +6,3 @@ A hit is a white flash, a short shove, a small shake, and a poof from the effect
 |------|------|
 | `hit.png` | Courtyard during a hit. No comic word, starburst, or speech bubble. |
 | `hit-close.png` | The same hit, cropped to the poof. |
-| `game-over.png` | End card in the pixel font, without halftone dots. |
