@@ -398,23 +398,42 @@ function hoverY(y, bob = 0) {
 /** Motion-blur afterimages of the ship */
 export function drawAfterimages() {}
 
-export function drawPlayer(ctx, player, t = 0) {
-  const sheet = artBook()?.sheets?.ryan;
-  if (!ctx || !player || !sheet) return;
+function ryanPose(player, t) {
   const moving = Math.hypot(player.vx || 0, player.vy || 0) > 12;
   const shooting = (player.fireCd || 0) > 0;
   let dir = player.face || "down";
-  if (shooting) dir = facing4(player.angle || 0);
-  else if (moving) dir = facing4(Math.atan2(player.vy, player.vx));
+  if (player.deathAge == null) {
+    if (shooting) dir = facing4(player.angle || 0);
+    else if (moving) dir = facing4(Math.atan2(player.vy, player.vx));
+  }
   player.face = dir;
+  if (player.deathAge != null) return { dir, clip: `death_${dir}`, time: player.deathAge, index: null };
+  if ((player.hurt || 0) > 0) return { dir, clip: `hurt_${dir}`, time: 0, index: null };
+  if (shooting) return { dir, clip: `shoot_${dir}`, time: t, index: null };
+  if (moving) return { dir, clip: `walk_${dir}`, time: t, index: ryanWalkIndex(player) };
+  return { dir, clip: `idle_${dir}`, time: t, index: null };
+}
+
+export function drawPlayer(ctx, player, t = 0) {
+  const sheet = artBook()?.sheets?.ryan;
+  if (!ctx || !player || !sheet) return;
   const flashing = (player.flash || 0) > 0;
-  if (player.invuln > 0 && !flashing && Math.floor(player.invuln / 80) % 2 === 0) return;
-  const clip = shooting ? `shoot_${dir}` : moving ? `walk_${dir}` : `idle_${dir}`;
+  if (player.deathAge == null && player.invuln > 0 && !flashing && Math.floor(player.invuln / 80) % 2 === 0) return;
+  const pose = ryanPose(player, t);
   const opts = {};
-  if (moving && !shooting) opts.index = ryanWalkIndex(player);
+  if (pose.index != null) opts.index = pose.index;
   const flash = flashAlpha(player.flash);
-  if (flash > 0) opts.flash = flash;
-  drawClip(ctx, sheet, clip, t, player.x, player.y, opts);
+  if (flash > 0 && player.deathAge == null) opts.flash = flash;
+  drawClip(ctx, sheet, pose.clip, pose.time, player.x, player.y, opts);
+}
+
+export function drawRyanDeaths(ctx, list) {
+  const sheet = artBook()?.sheets?.ryan;
+  if (!ctx || !sheet || !list) return;
+  for (const ghost of list) {
+    if (!ghost || ghost.age == null || ghost.age >= 0.54) continue;
+    drawClip(ctx, sheet, `death_${ghost.dir || "down"}`, ghost.age, ghost.x, ghost.y);
+  }
 }
 
 export function drawBullets(ctx, bullets, t = 0) {
@@ -462,43 +481,55 @@ function actorOpts(entity, index, extra = {}) {
   return { opts, pose };
 }
 
+function enemyPose(enemy, t) {
+  if (enemy.deathAge != null) return { name: "death", time: enemy.deathAge, index: null };
+  if ((enemy.hurt || 0) > 0) return { name: "hurt", time: 0, index: null };
+  if ((enemy.dashing || 0) > 0 || (enemy.coiling || 0) > 0 || (enemy.attack || 0) > 0) {
+    return { name: "attack", time: enemy.attackT || 0, index: null };
+  }
+  return { name: "idle", time: t, index: enemyFrame(enemy) };
+}
+
+function drawActor(ctx, sheet, enemy, x, y, t, extra = {}) {
+  const pose = enemyPose(enemy, t);
+  const { opts } = actorOpts(enemy, pose.index, extra);
+  if (pose.index == null) delete opts.index;
+  if (enemy.flipX && extra.angle == null) opts.flipX = true;
+  drawClip(ctx, sheet, pose.name, pose.time, x, y, opts);
+}
+
 function drawWhip(ctx, enemy, t) {
   const book = artBook();
-  const pose = spawnPose(enemy.enter);
+  const pose = spawnPose(enemy.deathAge != null ? 1 : enemy.enter);
   if (pose.alpha <= 0) return;
   const segs = snakeSegments(enemy);
   const segSheet = book.sheets[book.behavior.snakeSegment];
   const headSheet = book.sheets[book.behavior.snake];
-  const base = enemyFrame(enemy);
   for (let i = segs.length - 1; i >= 1; i--) {
     const here = segs[i];
     const toward = segs[i - 1];
     const heading = Math.atan2(toward.y - here.y, toward.x - here.x);
-    const { opts } = actorOpts(enemy, (base + i) % 4, { angle: heading + Math.PI / 2 });
-    drawClip(ctx, segSheet, "idle", t, here.x, here.y + pose.dy, opts);
+    drawActor(ctx, segSheet, enemy, here.x, here.y + pose.dy, t, { angle: heading + Math.PI / 2 });
   }
   const head = segs[0];
   const neck = segs[1] || head;
   const heading = Math.atan2(head.y - neck.y, head.x - neck.x);
-  const { opts } = actorOpts(enemy, base % 4, { angle: heading + Math.PI / 2 });
-  drawClip(ctx, headSheet, "idle", t, head.x, head.y + pose.dy, opts);
+  drawActor(ctx, headSheet, enemy, head.x, head.y + pose.dy, t, { angle: heading + Math.PI / 2 });
 }
 
 export function drawEnemies(ctx, enemies, t = 0) {
   if (!ctx || !artBook() || !enemies) return;
   for (const e of enemies) {
-    if (!e || e.dead) continue;
+    if (!e || (e.dead && e.deathAge == null)) continue;
     if (e.type === "snake") {
       drawWhip(ctx, e, t);
       continue;
     }
-    const pose = spawnPose(e.enter);
+    const pose = spawnPose(e.deathAge != null ? 1 : e.enter);
     if (pose.alpha <= 0) continue;
     const sheet = sheetForEnemy(e);
     if (!sheet) continue;
-    const { opts } = actorOpts(e, enemyFrame(e));
-    if (e.flipX) opts.flipX = true;
-    drawClip(ctx, sheet, "idle", t, e.x, e.y + pose.dy, opts);
+    drawActor(ctx, sheet, e, e.x, e.y + pose.dy, t);
   }
 }
 

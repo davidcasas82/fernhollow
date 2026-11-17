@@ -31,6 +31,7 @@ function writeJson(key, value) {
 
 /** Dev-only: POST to local ingest so the agent can read playtest deaths. */
 function shipPlaytest(kind, payload) {
+  if (globalThis.__FERN_INGEST !== true) return;
   if (typeof document === "undefined" || typeof document.createElement !== "function") return;
   if (typeof fetch !== "function") return;
   try {

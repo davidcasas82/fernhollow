@@ -43,6 +43,73 @@ function indexedFrames(sprite) {
   return frames;
 }
 
+function cellFrame(cell, anchor, scale) {
+  return {
+    sx: cell.x,
+    sy: cell.y,
+    sw: cell.w,
+    sh: cell.h,
+    ax: anchor.x,
+    ay: anchor.y,
+    scale,
+  };
+}
+
+function extraClips(extra) {
+  if (!extra?.file || !extra.frame_w || !extra.frame_h || !extra.anchor || !extra.cells) {
+    throw new Error("v3 extra sheet is missing frame data");
+  }
+  const scale = integerScale(extra.scale, extra.file);
+  let w = 0;
+  let h = 0;
+  for (const cell of Object.values(extra.cells)) {
+    if (cell.w !== extra.frame_w || cell.h !== extra.frame_h) {
+      throw new Error(`${extra.file} cell is not ${extra.frame_w}x${extra.frame_h}`);
+    }
+    w = Math.max(w, cell.x + cell.w);
+    h = Math.max(h, cell.y + cell.h);
+  }
+  const clips = {};
+  for (const [name, anim] of Object.entries(extra.animations || {})) {
+    if (!anim.frames?.length) throw new Error(`${extra.file} ${name} has no frames`);
+    clips[name] = {
+      file: extra.file,
+      fps: Number(anim.fps) || 0,
+      loop: anim.loop !== false,
+      frames: anim.frames.map((key) => {
+        const cell = extra.cells[key];
+        if (!cell) throw new Error(`${extra.file} is missing ${key}`);
+        return cellFrame(cell, extra.anchor, scale);
+      }),
+    };
+  }
+  return { clips, file: { file: extra.file, w, h } };
+}
+
+function uiSheet(extra) {
+  if (!extra?.file || !extra.cells) throw new Error("v3 ui sheet is missing cells");
+  const scale = integerScale(extra.draw_scale, extra.file);
+  const clips = {};
+  for (const [name, cell] of Object.entries(extra.cells)) {
+    clips[name] = {
+      file: extra.file,
+      fps: 0,
+      loop: false,
+      frames: [
+        cellFrame(
+          cell,
+          { x: Math.round(cell.w / 2), y: Math.round(cell.h / 2) },
+          scale
+        ),
+      ],
+    };
+  }
+  return {
+    sheet: { id: "ui", file: extra.file, clips },
+    file: { file: extra.file, w: extra.w, h: extra.h },
+  };
+}
+
 function clipFromAnim(sprite, anim) {
   const frames = [];
   for (const ref of anim.frames) {
@@ -177,6 +244,23 @@ export function parseAtlas(atlas, walls) {
   if (ui.draw_scale !== 2) throw new Error("ui-frames draw_scale must be 2");
   files.push({ file: ui.file, w: ui.w, h: ui.h });
 
+  if (!atlas.v3_extras) throw new Error("atlas.json is missing v3_extras");
+  for (const [id, extra] of Object.entries(atlas.v3_extras)) {
+    if (id === "ui") continue;
+    if (!sheets[id]) throw new Error(`v3 extra ${id} has no base sheet`);
+    const built = extraClips(extra);
+    Object.assign(sheets[id].clips, built.clips);
+    files.push(built.file);
+  }
+  for (const name of ["hurt_down", "hurt_up", "hurt_left", "hurt_right", "death_down", "death_up", "death_left", "death_right"]) {
+    if (!sheets.ryan?.clips[name]) throw new Error(`ryan is missing ${name}`);
+  }
+  for (const id of Object.values(behavior)) {
+    for (const name of ["attack", "hurt", "death"]) {
+      if (!sheets[id]?.clips[name]) throw new Error(`${id} is missing ${name}`);
+    }
+  }
+
   return {
     world: { w: atlas.world?.w || courtyard.w, h: atlas.world?.h || courtyard.h },
     floor: { x: floor.x, y: floor.y, w: floor.w, h: floor.h },
@@ -208,7 +292,12 @@ export function bindArt(defs, images) {
   }
   const sheets = {};
   for (const [id, sheet] of Object.entries(defs.sheets)) {
-    sheets[id] = { ...sheet, image: images[sheet.file] };
+    const clips = {};
+    for (const [name, clip] of Object.entries(sheet.clips)) {
+      const file = clip.file || sheet.file;
+      clips[name] = { ...clip, image: images[file] };
+    }
+    sheets[id] = { ...sheet, image: images[sheet.file], clips };
   }
   return installArt({
     world: defs.world,
@@ -262,8 +351,12 @@ export function clipFrame(sheet, name, time) {
   const fps = clip.fps || 0;
   let i = 0;
   if (fps > 0) {
-    i = Math.floor(time * fps) % clip.frames.length;
-    if (i < 0) i += clip.frames.length;
+    const raw = Math.floor(time * fps);
+    if (clip.loop === false) i = Math.max(0, Math.min(clip.frames.length - 1, raw));
+    else {
+      i = raw % clip.frames.length;
+      if (i < 0) i += clip.frames.length;
+    }
   }
   return clip.frames[i];
 }
@@ -309,12 +402,13 @@ function paintWhiteOverlay(ctx, image, frame, dx, dy, dw, dh, amount) {
  * flash is a brief white overlay on top of that same frame.
  */
 export function drawClip(ctx, sheet, name, time, x, y, opts = {}) {
-  if (!ctx || !sheet?.image) return null;
+  if (!ctx || !sheet) return null;
   const index = opts.index;
   const clip = sheet.clips?.[name] || sheet.clips?.idle;
   const frame =
     index != null ? clip?.frames?.[index] : clipFrame(sheet, name, time);
-  if (!frame) return null;
+  const image = clip?.image || sheet.image;
+  if (!frame || !image) return null;
   const scale = frame.scale;
   if (!Number.isInteger(scale) || scale < 1) return null;
   const dw = frame.sw * scale;
@@ -341,8 +435,8 @@ export function drawClip(ctx, sheet, name, time, x, y, opts = {}) {
     dx = Math.round(feetX - frame.ax * scale);
     dy = Math.round(feetY - frame.ay * scale);
   }
-  ctx.drawImage(sheet.image, frame.sx, frame.sy, frame.sw, frame.sh, dx, dy, dw, dh);
-  if (opts.flash > 0) paintWhiteOverlay(ctx, sheet.image, frame, dx, dy, dw, dh, opts.flash);
+  ctx.drawImage(image, frame.sx, frame.sy, frame.sw, frame.sh, dx, dy, dw, dh);
+  if (opts.flash > 0) paintWhiteOverlay(ctx, image, frame, dx, dy, dw, dh, opts.flash);
   ctx.restore();
   return frame;
 }

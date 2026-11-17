@@ -112,6 +112,7 @@ import {
   drawGeoms,
   drawHudIcons,
   drawPlayer,
+  drawRyanDeaths,
   drawCheckpoints,
   drawDamageNumbers,
   enemyIsOutline,
@@ -575,7 +576,7 @@ this.modeFlags = new Set();
       e.dead = true;
       this._onKill(e, { fromBomb: true });
     }
-    this.enemies = this.enemies.filter((e) => !e.dead);
+    this.enemies = this.enemies.filter((e) => !e.dead || (e.deathAge != null && e.deathAge < 0.54));
   }
 
   /** Path boss-lite phase change: pinch the floor, then dash. */
@@ -1679,6 +1680,8 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
       enemy.type === "void" ||
       enemy.type === "splitter";
     // Sektori kill juice: denser front-loaded pop (short TTL handled in particles)
+    enemy.deathAge = enemy.deathAge ?? 0;
+    enemy.dead = true;
     this._artFx("poof", enemy.x, enemy.y);
     this.particles.burst(enemy.x, enemy.y, enemy.color, 18 + (big ? 8 : 0), 220);
     this.particles.burst(enemy.x, enemy.y, COLORS.paper || "#fff4dc", 8, 160);
@@ -1756,12 +1759,13 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
         continue;
       }
       e.dead = true;
+      e.deathAge = e.deathAge ?? 0;
       this._artFx("poof", e.x, e.y);
       this.particles.burst(e.x, e.y, e.color, 22, 300);
       this.particles.ring(e.x, e.y, e.color, 12, 220);
       this._gridPulse(e.x, e.y, 1.0);
     }
-    this.enemies = this.enemies.filter((e) => !e.dead);
+    this.enemies = this.enemies.filter((e) => !e.dead || (e.deathAge != null && e.deathAge < 0.54));
     this.bullets = [];
     this.player.invuln = Math.max(this.player.invuln, 700);
     this.boardWasPopulated = false; // bomb clear doesn't count as skill clear
@@ -1902,10 +1906,12 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
       if (left <= target) break;
       if (row.e.dead) continue;
       row.e.dead = true;
+      row.e.deathAge = row.e.deathAge ?? 0;
+      this._artFx("poof", row.e.x, row.e.y);
       this.particles.burst(row.e.x, row.e.y, row.e.color, 10, 160);
       left -= 1;
     }
-    this.enemies = this.enemies.filter((e) => !e.dead);
+    this.enemies = this.enemies.filter((e) => !e.dead || (e.deathAge != null && e.deathAge < 0.54));
   }
 
   /**
@@ -1976,6 +1982,14 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     const deathMeta = this._snapshotDeath(causeHint);
     this._artFx("poof", deathMeta.x, deathMeta.y);
     addShake(this.cam, 4);
+    if (!this.ryanDeaths) this.ryanDeaths = [];
+    this.ryanDeaths.push({
+      x: deathMeta.x,
+      y: deathMeta.y,
+      dir: this.player.face || "down",
+      age: 0,
+    });
+    this.player.hurt = TIMING.hurtHold;
     this.player.flash = TIMING.hurtFlash;
     this.lives -= 1;
     this.ui.updateLives(this.lives);
@@ -2014,10 +2028,12 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     for (const e of this.enemies) {
       if (circlesOverlap(this.player.x, this.player.y, clearR, e.x, e.y, e.r)) {
         e.dead = true;
+        e.deathAge = e.deathAge ?? 0;
+        this._artFx("poof", e.x, e.y);
         this.particles.burst(e.x, e.y, e.color, 16, 220);
       }
     }
-    this.enemies = this.enemies.filter((e) => !e.dead);
+    this.enemies = this.enemies.filter((e) => !e.dead || (e.deathAge != null && e.deathAge < 0.54));
     this._cullEnemiesAfterDeath();
 
     // Knock survivors outward so you’re not ringed the instant grace ends
@@ -2156,6 +2172,13 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
 
     this.elapsed += dt;
     this.time += dt;
+    for (const e of this.enemies) {
+      if (e.deathAge != null) e.deathAge += dt;
+    }
+    if (this.ryanDeaths) {
+      for (const ghost of this.ryanDeaths) ghost.age += dt;
+      this.ryanDeaths = this.ryanDeaths.filter((ghost) => ghost.age < 0.54);
+    }
     this.levelTimer += dt;
     this._tickMorph(dt);
     if (this.mult > this.peakMult) this.peakMult = this.mult;
@@ -2321,7 +2344,7 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     }
     this.bullets = this.bullets.filter((b) => !b.dead);
     if (this.enemies.some((e) => !e.dead)) this.boardWasPopulated = true;
-    this.enemies = this.enemies.filter((e) => !e.dead);
+    this.enemies = this.enemies.filter((e) => !e.dead || (e.deathAge != null && e.deathAge < 0.54));
     this._checkBoardClear();
 
     if (this.player.invuln <= 0) {
@@ -2461,6 +2484,7 @@ const phrase = buildPhrase(this.elapsed, d, () => this._pickType(), {
     drawBullets(wctx, this.bullets, this.time);
     drawArtFx(wctx, this.artFx, this.time);
     drawAfterimages(wctx, this.afterimages);
+    drawRyanDeaths(wctx, this.ryanDeaths);
     drawPlayer(wctx, this.player, this.time);
     this.particles.draw(wctx);
     drawDamageNumbers(wctx, this.damageNums);

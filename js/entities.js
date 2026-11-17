@@ -81,6 +81,7 @@ export function updatePlayer(player, move, aimAngle, dt, firing) {
 
   const travel = Math.hypot(player.x - beforeX, player.y - beforeY);
   if (player.flash > 0) player.flash = Math.max(0, player.flash - dt);
+  if (player.hurt > 0) player.hurt = Math.max(0, player.hurt - dt);
   if (Math.hypot(player.vx, player.vy) > 12) player.step = (player.step || 0) + travel;
 
   // Invuln countdown is handled in game loop so it can extend while overlapping
@@ -548,6 +549,17 @@ export function updateEnemies(enemies, player, dt, elapsed = 0) {
   for (const e of enemies) {
     if (e.dead) continue;
     settleMotion(e, dt);
+    const dist = Math.hypot(player.x - e.x, player.y - e.y);
+    const lunging = (e.dashing || 0) > 0 || (e.coiling || 0) > 0;
+    const bite = dist < (e.r || 16) + (player.r || 13) + 28;
+    if (lunging || bite) {
+      if (!(e.attack > 0)) e.attackT = 0;
+      e.attack = Math.max(e.attack || 0, lunging ? 0.28 : 0.24);
+    }
+    if (e.attack > 0) {
+      e.attack -= dt;
+      e.attackT = (e.attackT || 0) + dt;
+    }
   }
 
   return { atoms };

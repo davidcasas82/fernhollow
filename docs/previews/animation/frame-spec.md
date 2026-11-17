@@ -1,8 +1,8 @@
-# Missing animation frames
+# v3 animation frames
 
-Do not draw these. The game already times the cells that exist. These names are the cells it does not have.
+These cells are on the extra sheets in `v3_extras` and are drawn from those files. The game does not redraw them.
 
-Existing cells stay as they are. Ryan uses `idle`, `walk0`–`walk3`, and `shoot` in rows `down`, `up`, `left`, `right` (80×96, anchor 40, 93, scale 1). Each enemy sheet already has four frames at the size below, facing right. Left is a flip. Frame 0 is the planted idle. The four frames are the walk. Attack, while a real attack cell is missing, retimes that walk. Hurt is a white flash on the current cell. Death is the four-frame poof on `fx.png` (64×64, 8 fps, play once).
+Walk and idle stay on the original sheets. Hurt, attack, and death play from the extra sheets at the sizes below. Enemies still flip the same way they did before. A hit also flashes white, knocks back, shakes a little, and puffs pixels. Death still plays the poof on `fx.png`.
 
 ## Ryan (`ryan.png`, 80×96)
 
