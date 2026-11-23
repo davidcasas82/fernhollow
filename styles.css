@@ -2748,14 +2748,6 @@ body.touch-ui .title-menu {
   -webkit-text-stroke: 0;
 }
 
-.logo-geometry {
-  font-size: clamp(2.4rem, 11.5vw, 9.5rem);
-}
-
-.logo-arena {
-  font-size: clamp(2.8rem, 13.5vw, 11rem);
-}
-
 /* Bevel / chrome fill via layered shadows + gradient text */
 .logo-fill {
   position: relative;
