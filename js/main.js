@@ -1,4 +1,5 @@
 import { artBook, loadArt } from "./art.js";
+import { AudioBus } from "./audio.js";
 import { Game } from "./game.js";
 import { mountTitleScreen } from "./title-screen.js";
 import { mountUiFrames, paintUi, placeMenuCursor } from "./ui-frames.js";
@@ -156,6 +157,8 @@ let pendingAction = null;
 let titleAction = null;
 let splashDone = false;
 let game = null;
+/** Exists before Game so the first gesture can unlock audio during load. */
+const earlyAudio = new AudioBus();
 let helpOpen = false;
 let panelHelpOpen = false;
 let uiFocus = 0;
@@ -508,11 +511,28 @@ function showTitleMenu() {
   overlay?.classList.remove("hidden");
   applyUiFocus(titleTargets(), 0);
   syncTouchChrome();
-  game?.audio?.playMenuTheme?.();
+  startTitleMusic();
 }
 
 /** Title music is started only from a user gesture. The menu paints first. */
 let titleThemePending = false;
+
+function titleAudio() {
+  return game?.audio || earlyAudio;
+}
+
+function titleMusicLive() {
+  const chip = game?.audio?.chiptune;
+  return !!(chip && chip.currentId === "title" && chip.source && !chip.paused);
+}
+
+/** Play the title loop once the context is already running. */
+function startTitleMusic() {
+  const audio = game?.audio;
+  if (!audio?.ctx || audio.ctx.state === "suspended") return;
+  if (!titleMenuIsUp()) return;
+  audio.playMenuTheme();
+}
 
 function titleMenuIsUp() {
   return !!(
@@ -524,17 +544,36 @@ function titleMenuIsUp() {
 
 function startTitleTheme() {
   if (!titleMenuIsUp()) return;
-  if (!game?.audio) {
-    titleThemePending = true;
+  if (titleMusicLive()) return;
+  const audio = titleAudio();
+  let ctx = null;
+  try {
+    ctx = audio.ensure();
+  } catch {
     return;
   }
-  titleThemePending = false;
-  try {
-    game.audio.ensure();
-    game.audio.playMenuTheme();
-  } catch {
-    /* ignore */
+  const show = () => {
+    if (!game?.audio) {
+      titleThemePending = true;
+      return;
+    }
+    titleThemePending = false;
+    if (!titleMenuIsUp() || titleMusicLive()) return;
+    showTitleMenu();
+  };
+  // Resume or create the context before showTitleMenu(), which starts the loop.
+  if (!ctx || ctx.state === "suspended") {
+    if (!game) titleThemePending = true;
+    if (ctx && typeof ctx.resume === "function") {
+      Promise.resolve(ctx.resume())
+        .then(() => {
+          if (ctx.state !== "suspended") show();
+        })
+        .catch(() => {});
+    }
+    return;
   }
+  show();
 }
 
 function onTitleGesture() {
@@ -1280,13 +1319,6 @@ if (level && pathObjectiveEl) {
 function dismissSplash() {
   if (splashDone || !splash) return;
   splashDone = true;
-  // Unlock audio on the same user gesture, then sting into the wipe
-  try {
-    game?.audio?.ensure?.();
-    game?.audio?.splashDismiss?.();
-  } catch {
-    /* ignore */
-  }
   splash.classList.add("leaving");
   const finish = (e) => {
     if (e && e.target !== splash) return;
@@ -1295,8 +1327,33 @@ function dismissSplash() {
   };
   splash.addEventListener("transitionend", finish);
   setTimeout(() => finish(), 900);
-  // Reveal title menu while splash wipes — continuous scene, not a hard cut
-  showTitleMenu();
+  // Resume or create the context before the menu, so the first visit has music.
+  // The sting is scheduled after the fade starts and stays ducked for 0.35s.
+  const audio = titleAudio();
+  let ctx = null;
+  try {
+    ctx = audio.ensure();
+  } catch {
+    ctx = null;
+  }
+  const reveal = () => {
+    showTitleMenu();
+    try {
+      game?.audio?.splashDismiss?.();
+    } catch {
+      /* ignore */
+    }
+  };
+  if (ctx && ctx.state === "suspended" && typeof ctx.resume === "function") {
+    Promise.resolve(ctx.resume())
+      .then(() => {
+        if (ctx.state !== "suspended") reveal();
+        else showTitleMenu();
+      })
+      .catch(() => showTitleMenu());
+    return;
+  }
+  reveal();
 }
 
 if (splash) {
@@ -1316,7 +1373,7 @@ paintFxChips();
 mountUiFrames();
 
 /** Assigned after UI helpers so splash dismiss can safely optional-chain audio. */
-game = new Game(canvas, ui);
+game = new Game(canvas, ui, earlyAudio);
 window.__fernhollow = game;
 if (titleThemePending) startTitleTheme();
 window.__arenaRuns = () => dumpRunsToConsole();

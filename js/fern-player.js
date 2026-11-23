@@ -5,6 +5,11 @@
 import { SFX, TRACKS } from "./fern-score.js";
 import { renderScore } from "./fern-synth.js";
 
+/** Music eases in over this long. SFX stay ducked until it finishes. */
+const MUSIC_FADE_SEC = 0.35;
+const SFX_LEVEL = 0.2;
+const SFX_DUCK = SFX_LEVEL * 0.4;
+
 export class FernPlayer {
   /**
    * @param {{ ensure: () => AudioContext | null, enabled: boolean, bgmVolume: number, _silenceHtml?: () => void }} bus
@@ -29,7 +34,7 @@ export class FernPlayer {
     this.musicGain.gain.value = this.bus.bgmVolume;
     this.musicGain.connect(ctx.destination);
     this.sfxGain = ctx.createGain();
-    this.sfxGain.gain.value = 0.2;
+    this.sfxGain.gain.value = SFX_LEVEL;
     this.sfxGain.connect(ctx.destination);
     return ctx;
   }
@@ -59,10 +64,13 @@ export class FernPlayer {
       return;
     }
     const ctx = this._ctx();
-    if (!ctx) {
+    if (!ctx || ctx.state === "suspended") {
+      // A source started while suspended is dropped, and restart:false would
+      // then refuse to try again. Remember the track and wait until it runs.
       this.currentId = id;
       this.paused = true;
       this.offset = restart ? 0 : this.offset;
+      this._stopSource();
       return;
     }
     if (this.currentId === id && this.source && !restart && !this.paused) return;
@@ -83,7 +91,8 @@ export class FernPlayer {
     const g = this.musicGain.gain;
     g.cancelScheduledValues(now);
     g.setValueAtTime(0, now);
-    g.linearRampToValueAtTime(this.bus.bgmVolume, now + 0.35);
+    g.linearRampToValueAtTime(this.bus.bgmVolume, now + MUSIC_FADE_SEC);
+    this._duckSfx(now);
     const startAt = Math.max(0, Math.min(offset, Math.max(0, buffer.duration - 0.01)));
     src.start(now, startAt);
     this.source = src;
@@ -100,6 +109,22 @@ export class FernPlayer {
       /* already stopped */
     }
     this.source = null;
+  }
+
+  /** Hold effects down for the whole music fade-in, then restore them. */
+  _duckSfx(now) {
+    if (!this.sfxGain) return;
+    const g = this.sfxGain.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(SFX_DUCK, now);
+    g.setValueAtTime(SFX_LEVEL, now + MUSIC_FADE_SEC);
+  }
+
+  _restoreSfx(now) {
+    if (!this.sfxGain) return;
+    const g = this.sfxGain.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(SFX_LEVEL, now);
   }
 
   pause() {
@@ -119,7 +144,7 @@ export class FernPlayer {
     if (!this.bus.enabled || !this.currentId) return;
     if (this.source && !this.paused) return;
     const ctx = this._ctx();
-    if (!ctx) return;
+    if (!ctx || ctx.state === "suspended") return;
     const buf = this.buffers.get(this.currentId) || this._buffer(ctx, this.buffers, this.currentId, TRACKS[this.currentId]);
     this._start(ctx, buf, this.offset);
     this.paused = false;
@@ -135,6 +160,7 @@ export class FernPlayer {
       const now = ctx.currentTime;
       this.musicGain.gain.cancelScheduledValues(now);
       this.musicGain.gain.setValueAtTime(this.bus.bgmVolume, now);
+      this._restoreSfx(now);
     }
   }
 

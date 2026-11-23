@@ -129,7 +129,7 @@ import {
 } from "./postfx.js";
 
 export class Game {
-  constructor(canvas, ui) {
+  constructor(canvas, ui, audio = null) {
     this.canvas = canvas;
     this.ctx =
       canvas.getContext("2d", { alpha: false, desynchronized: true }) ||
@@ -157,7 +157,7 @@ export class Game {
     this.gridImpulses = [];
     this.particles = new ParticleSystem();
     this.bolts = new BoltFx();
-    this.audio = new AudioBus();
+    this.audio = audio || new AudioBus();
 
     this.score = 0;
     this.best = Number(localStorage.getItem(HS_KEY) || 0);

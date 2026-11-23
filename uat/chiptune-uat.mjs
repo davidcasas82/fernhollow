@@ -12,6 +12,7 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const js = (name) => pathToFileURL(path.join(root, "js", name)).href;
 
 const { AudioBus } = await import(js("audio.js"));
+const { BGM_VOLUME } = await import(js("constants.js"));
 const { TRACKS, SFX, SFX_REEL_CUES, sfxReelPlan, fernBattleId, trackSeconds } = await import(
   js("fern-score.js")
 );
@@ -73,6 +74,94 @@ test("the chiptune is what the game plays", () => {
   bus.menuSelect();
   bus.bossIntro();
   assert.equal(bus.chiptune.currentId, "title");
+});
+
+test("title music waits until the context is running, and ducks effects through the fade-in", () => {
+  const gains = [];
+  const sources = [];
+  class GainParam {
+    constructor() {
+      this.value = 1;
+      this.events = [];
+    }
+    cancelScheduledValues(t) {
+      this.events.push(["cancel", t]);
+    }
+    setValueAtTime(v, t) {
+      this.value = v;
+      this.events.push(["set", v, t]);
+    }
+    linearRampToValueAtTime(v, t) {
+      this.events.push(["ramp", v, t]);
+    }
+    exponentialRampToValueAtTime() {}
+  }
+  class MockContext {
+    constructor() {
+      this.state = "suspended";
+      this.currentTime = 2;
+      this.sampleRate = 8000;
+      this.destination = {};
+    }
+    createGain() {
+      const node = { gain: new GainParam(), connect() {} };
+      gains.push(node);
+      return node;
+    }
+    createBuffer(_channels, length) {
+      const data = [new Float32Array(length), new Float32Array(length)];
+      return {
+        duration: length / this.sampleRate,
+        getChannelData(i) {
+          return data[i];
+        },
+        copyToChannel(src, i) {
+          data[i].set(src.subarray(0, data[i].length));
+        },
+      };
+    }
+    createBufferSource() {
+      const src = {
+        buffer: null,
+        loop: false,
+        playbackRate: { value: 1 },
+        connect() {},
+        start() {
+          src.started = true;
+        },
+        stop() {},
+      };
+      sources.push(src);
+      return src;
+    }
+    resume() {
+      return Promise.resolve();
+    }
+  }
+  const prev = globalThis.window;
+  globalThis.window = { AudioContext: MockContext };
+  try {
+    const bus = new AudioBus();
+    bus.playMenuTheme();
+    assert.equal(bus.chiptune.source, null);
+    assert.equal(bus.chiptune.paused, true);
+    assert.equal(sources.length, 0);
+    bus.ctx.state = "running";
+    bus.playMenuTheme();
+    assert.equal(bus.chiptune.currentId, "title");
+    assert.equal(bus.chiptune.paused, false);
+    assert.equal(sources.length, 1);
+    const music = gains[0].gain.events;
+    const sfx = gains[1].gain.events;
+    const fadeEnd = 2 + 0.35;
+    assert.ok(music.some((e) => e[0] === "ramp" && e[1] === BGM_VOLUME && e[2] === fadeEnd));
+    const ducked = sfx.filter((e) => e[0] === "set");
+    assert.ok(ducked.some((e) => e[1] === 0.2 * 0.4 && e[2] === 2));
+    assert.ok(ducked.some((e) => e[1] === 0.2 && e[2] === fadeEnd));
+  } finally {
+    if (prev === undefined) delete globalThis.window;
+    else globalThis.window = prev;
+  }
 });
 
 test("boss theme maps to the boss loop and other beds to courtyard", () => {
